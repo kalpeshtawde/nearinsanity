@@ -141,6 +141,12 @@ export const NI_CSS = `
   background: var(--ni-yellow);
 }
 
+/* Current page indicator (e.g. Gallery while on /gallery). */
+.ni-nav a[aria-current='page'] {
+  background: var(--ni-paper-deep);
+  font-weight: 800;
+}
+
 /* Compact dark pill CTA (Try Live Preview) on the far right. */
 .ni-nav button.ni-nav-cta {
   background: var(--ni-ink);

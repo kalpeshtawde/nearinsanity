@@ -152,6 +152,12 @@ function Header({ route }: { route: string }) {
           <button type="button" onClick={() => goToSection('ni-offers')}>
             Packs
           </button>
+          <a
+            href="/gallery"
+            aria-current={route === 'gallery' ? 'page' : undefined}
+          >
+            Gallery
+          </a>
           <button
             type="button"
             className="ni-nav-cta"
