@@ -71,17 +71,16 @@ export function planForCount(count: number): number {
  * Single source of truth for pricing.
  *
  * Every cartoon costs $1. Engraving (the buyer's website address printed on
- * the artwork) is an optional add-on: $10 one-time setup + $1 per cartoon.
+ * the artwork) is an optional add-on charged per cartoon: $10 per image.
  */
 export const PER_CARTOON_PRICE = 1;
-export const ENGRAVING_BASE_FEE = 10;
-export const ENGRAVING_PER_CARTOON = 1;
+export const ENGRAVING_PER_CARTOON = 10;
 
 export interface PackPricing {
   size: number;
   /** One-time base price for the pack, USD ($1 per cartoon). */
   basePrice: number;
-  /** Engraving add-on for the pack: $10 setup + $1 per cartoon. */
+  /** Engraving add-on for the pack: $10 per cartoon. */
   engravingFee: number;
   /** Per-cartoon engraving rate. */
   engravingPerCartoon: number;
@@ -93,7 +92,7 @@ export interface PackPricing {
 
 function packPricing(size: number, vanityDomain: string): PackPricing {
   const basePrice = size * PER_CARTOON_PRICE;
-  const engravingFee = ENGRAVING_BASE_FEE + size * ENGRAVING_PER_CARTOON;
+  const engravingFee = size * ENGRAVING_PER_CARTOON;
   return {
     size,
     basePrice,
