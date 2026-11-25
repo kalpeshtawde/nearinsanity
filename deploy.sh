@@ -11,14 +11,18 @@ echo "🚀 Deploying Near Insanity..."
 echo "📥 Pulling latest code from GitHub..."
 git pull origin main
 
-# Build and start Docker container
-echo "🐳 Building and starting Docker container..."
+# Build and start Docker containers (frontend + backend)
+echo "🐳 Building and starting Docker containers..."
 docker-compose -f docker-compose.prod.yml down
 docker-compose -f docker-compose.prod.yml up -d --build
 
-# Check if container is running
+# Apply any pending Django migrations
+echo "🗄️  Applying Django migrations..."
+docker-compose -f docker-compose.prod.yml exec -T backend python manage.py migrate
+
+# Check containers are running
 echo "✅ Checking container status..."
-docker ps | grep nearinsanity-web
+docker ps | grep nearinsanity
 
 echo "🎉 Deployment complete!"
 echo "Website should be accessible at http://localhost:8084"

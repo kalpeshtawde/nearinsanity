@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # Frontend: static React build served by nginx-in-docker.
   nearinsanity-web:
     build:
       context: .
@@ -11,6 +12,32 @@ services:
     restart: unless-stopped
     environment:
       - NODE_ENV=production
+    networks:
+      - nearinsanity-network
+
+  # Django backend (admin + REST API), gunicorn.
+  backend:
+    build:
+      context: ./backend
+    container_name: nearinsanity-backend
+    env_file:
+      - ./backend/.env
+    environment:
+      # The backend always runs in Docker, where "localhost" is the container
+      # itself — point DB connections at the host instead:
+      #   - server: physical Postgres 15 (see backend/.env.production.example)
+      #   - local:  the postgres:15 container (docker-compose.db.yml, port 5441)
+      DB_HOST: host.docker.internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8001:8000"
+    volumes:
+      # Persist uploads + collected static on the host so the host nginx can
+      # serve /media/ and /static/ directly.
+      - ./backend/media:/app/media
+      - ./backend/staticfiles:/app/staticfiles
+    restart: unless-stopped
     networks:
       - nearinsanity-network
 

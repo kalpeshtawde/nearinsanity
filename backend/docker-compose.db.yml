@@ -1,0 +1,18 @@
+# Local development database — PostgreSQL 15, matching the production server.
+# Usage: docker-compose -f docker-compose.db.yml up -d
+services:
+  db:
+    image: postgres:15
+    container_name: nearinsanity-db
+    environment:
+      POSTGRES_DB: nearinsanity
+      POSTGRES_USER: nearinsanity
+      POSTGRES_PASSWORD: nearinsanity_dev
+    ports:
+      - "5441:5432"
+    volumes:
+      - nearinsanity_pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  nearinsanity_pgdata:

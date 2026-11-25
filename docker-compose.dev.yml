@@ -1,0 +1,18 @@
+# Local development overrides for docker-compose.prod.yml.
+#
+# Usage (from the repo root):
+#   docker-compose -f docker-compose.prod.yml -f docker-compose.dev.yml up -d --build
+#
+# Swaps the backend from gunicorn to Django's hot-reload dev server and
+# bind-mounts the source so code changes apply instantly. The database stays
+# in its own container (docker-compose.db.yml).
+services:
+  backend:
+    # Hot-reload dev server (also serves uploaded /media/ while DEBUG=1).
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./backend:/app
+      - ./backend/media:/app/media
+      - ./backend/staticfiles:/app/staticfiles
+    environment:
+      DJANGO_DEBUG: "1"

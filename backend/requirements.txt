@@ -1,0 +1,10 @@
+Django==4.2.30
+djangorestframework==3.16.1
+django-cors-headers==4.9.0
+psycopg2-binary==2.9.12
+Pillow==11.3.0
+python-dotenv==1.2.1
+PyYAML==6.0.3
+inflection==0.5.1
+uritemplate==4.2.0
+gunicorn==23.0.0
