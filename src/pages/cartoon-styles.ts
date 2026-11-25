@@ -1130,39 +1130,57 @@ export const NI_CSS = `
   z-index: 3;
   display: grid;
   place-items: center;
+  width: 32px;
+  height: 32px;
   cursor: pointer;
 }
 
+/* The real input is invisible but covers the circle (keyboard + click). */
 .ni-select-check input {
-  appearance: none;
-  -webkit-appearance: none;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 2;
+}
+
+/* Visual circle (inputs can't render ::after, so the check lives here). */
+.ni-select-check__mark {
+  display: grid;
+  place-items: center;
   width: 32px;
   height: 32px;
-  margin: 0;
   border: 2.5px solid var(--ni-ink);
   border-radius: 50%;
   background: var(--ni-paper-light);
   box-shadow: 2px 2px 0 rgba(38, 32, 26, 0.28);
-  cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 }
 
-.ni-select-check input:hover {
+.ni-select-check:hover .ni-select-check__mark {
   transform: scale(1.08);
 }
 
-.ni-select-check input:checked {
+.ni-select-check input:checked + .ni-select-check__mark {
   background: var(--ni-red);
   border-color: var(--ni-red);
 }
 
-.ni-select-check input:checked::after {
+.ni-select-check input:checked + .ni-select-check__mark::after {
   content: '';
   width: 13px;
   height: 7px;
   border-left: 3px solid #fff;
   border-bottom: 3px solid #fff;
   transform: rotate(-45deg) translate(1px, -2px);
+}
+
+.ni-select-check input:focus-visible + .ni-select-check__mark {
+  outline: 3px solid var(--ni-yellow);
+  outline-offset: 2px;
 }
 
 /* Floating selection bar (bottom center, visible once items are picked). */

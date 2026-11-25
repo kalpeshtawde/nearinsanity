@@ -131,6 +131,7 @@ function CartoonCard({
             onChange={onToggle}
             aria-label={`${selected ? 'Remove' : 'Add'} ${cartoon.title} ${selected ? 'from' : 'to'} selection`}
           />
+          <span className="ni-select-check__mark" aria-hidden="true" />
         </label>
       )}
     </div>
