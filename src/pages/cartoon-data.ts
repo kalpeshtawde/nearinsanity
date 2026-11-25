@@ -18,6 +18,8 @@ export interface Cartoon {
   tag: string;
   base: string; // path without extension — the loader probes jpg → png → webp
   alt: string;
+  /** Absolute image URL from the gallery API; bypasses the local-file probe. */
+  imageUrl?: string;
 }
 
 // The supplied cartoons. "Too Much to Dream" is the featured bedroom cartoon;
@@ -177,13 +179,15 @@ export const COLLAGE_ASSETS: Cartoon[] = [
 
 /** Resolved src for a cartoon given the current probe state. */
 export function srcFor(cartoon: Cartoon, resolved: Record<string, Resolution>) {
+  if (cartoon.imageUrl) return cartoon.imageUrl;
   const r = resolved[cartoon.id];
   if (!r || r === 'missing') return `${cartoon.base}.jpg`;
   return `${cartoon.base}.${r}`;
 }
 
 export function isMissing(cartoon: Cartoon, resolved: Record<string, Resolution>) {
-  return resolved[cartoon.id] === 'missing';
+  // API-backed cartoons always have a concrete URL — never "missing".
+  return !cartoon.imageUrl && resolved[cartoon.id] === 'missing';
 }
 
 /** Advance the probe state for a failed image load (jpg → png → webp). */

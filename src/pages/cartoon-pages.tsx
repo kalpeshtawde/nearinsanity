@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { fetchGalleryCartoons } from './gallery-api';
 import {
   ART_BASE,
   CARTOONS,
@@ -231,8 +232,25 @@ function Lightbox({
 
 export function GalleryPage() {
   const [resolved, setResolved] = useState<Record<string, Resolution>>({});
+  const [cartoons, setCartoons] = useState<Cartoon[]>(CARTOONS);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const lastFocused = useRef<HTMLElement | null>(null);
+
+  // Load published images from the backend; keep the bundled list as a
+  // fallback when the API is unreachable.
+  useEffect(() => {
+    let alive = true;
+    fetchGalleryCartoons()
+      .then((items) => {
+        if (alive && items.length > 0) setCartoons(items);
+      })
+      .catch(() => {
+        /* API unavailable — static fallback stays in place */
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const handleImgError = (cartoon: Cartoon) => {
     setResolved((prev) => advanceResolution(prev, cartoon.id));
@@ -247,10 +265,10 @@ export function GalleryPage() {
     lastFocused.current?.focus();
   };
   const nextCartoon = () =>
-    setLightboxIndex((i) => (i === null ? i : (i + 1) % CARTOONS.length));
+    setLightboxIndex((i) => (i === null ? i : (i + 1) % cartoons.length));
   const prevCartoon = () =>
     setLightboxIndex((i) =>
-      i === null ? i : (i - 1 + CARTOONS.length) % CARTOONS.length,
+      i === null ? i : (i - 1 + cartoons.length) % cartoons.length,
     );
 
   // Lock background scroll while the lightbox is open.
@@ -272,7 +290,7 @@ export function GalleryPage() {
           blurb="The shared catalog — full frames, captions intact. Tap any cartoon for a closer look."
         />
         <div className="ni-gallery">
-          {CARTOONS.map((cartoon, i) => (
+          {cartoons.map((cartoon, i) => (
             <CartoonCard
               key={cartoon.id}
               cartoon={cartoon}
@@ -283,17 +301,17 @@ export function GalleryPage() {
           ))}
         </div>
         <p className="ni-gallery-note">
-          Showing the current selection from Bob’s artwork — the layout grows
-          to the full 50-cartoon catalog as more cartoons are delivered.
+          The live catalog — cartoons added in the admin panel appear here
+          automatically.
         </p>
       </section>
 
       {lightboxIndex !== null && (
         <Lightbox
-          cartoons={CARTOONS}
+          cartoons={cartoons}
           index={lightboxIndex}
           resolved={resolved}
-          onError={() => handleImgError(CARTOONS[lightboxIndex])}
+          onError={() => handleImgError(cartoons[lightboxIndex])}
           onClose={closeLightbox}
           onPrev={prevCartoon}
           onNext={nextCartoon}
@@ -606,7 +624,22 @@ export function EngraveSection() {
 
 export function HomePage() {
   const [resolved, setResolved] = useState<Record<string, Resolution>>({});
-  const featured = CARTOONS[0];
+  const [featured, setFeatured] = useState<Cartoon>(CARTOONS[0]);
+
+  // Use the latest published cartoon from the backend when available.
+  useEffect(() => {
+    let alive = true;
+    fetchGalleryCartoons()
+      .then((items) => {
+        if (alive && items.length > 0) setFeatured(items[0]);
+      })
+      .catch(() => {
+        /* API unavailable — static fallback stays in place */
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const handleImgError = (cartoon: Cartoon) => {
     setResolved((prev) => advanceResolution(prev, cartoon.id));

@@ -8,6 +8,12 @@ accents, and a winged-toaster logo.
 
 - `/` — Homepage (featured cartoon, engraved-sample showcase, offers)
 - `/gallery` — Shared cartoon gallery (keyboard-accessible lightbox)
+
+The gallery is **API-driven**: it loads published images from the Django
+backend (`/api/v1/gallery/`) and falls back to the bundled static list if
+the API is unreachable. Images uploaded in the admin panel appear on the
+gallery automatically. For local frontend dev, `VITE_API_BASE` in
+`.env.local` points at the local backend (same origin in production).
 - `/packs/10`, `/packs/20`, `/packs/30`, `/packs/50` — Pack offers
 - `/membership` — Membership offer
 
