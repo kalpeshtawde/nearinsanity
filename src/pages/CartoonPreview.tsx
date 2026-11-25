@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { NI_CSS } from './cartoon-styles';
-import { CheckoutPage, GalleryPage, HomePage, OfferPage, SelectionBar } from './cartoon-pages';
+import { CheckoutPage, GalleryPage, HomePage, OfferPage, PricingPage, SelectionBar } from './cartoon-pages';
 import { SelectionProvider } from './selection';
 
 /**
@@ -153,6 +153,12 @@ function Header({ route }: { route: string }) {
             Packs
           </button>
           <a
+            href="/pricing"
+            aria-current={route === 'pricing' ? 'page' : undefined}
+          >
+            Pricing
+          </a>
+          <a
             href="/gallery"
             aria-current={route === 'gallery' ? 'page' : undefined}
           >
@@ -190,6 +196,7 @@ function Footer() {
 function renderPage(route: string) {
   if (route === 'gallery') return <GalleryPage />;
   if (route === 'checkout') return <CheckoutPage />;
+  if (route === 'pricing') return <PricingPage />;
   if (
     route === 'membership' ||
     route.startsWith('packs/')

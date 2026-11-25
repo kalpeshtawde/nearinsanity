@@ -68,32 +68,48 @@ export function planForCount(count: number): number {
 }
 
 /**
- * Single source of truth for pack pricing and the custom-URL customization.
- * Keep every rate here — the pages calculate totals from this object.
+ * Single source of truth for pricing.
+ *
+ * Every cartoon costs $1. Engraving (the buyer's website address printed on
+ * the artwork) is an optional add-on: $10 one-time setup + $1 per cartoon.
  */
+export const PER_CARTOON_PRICE = 1;
+export const ENGRAVING_BASE_FEE = 10;
+export const ENGRAVING_PER_CARTOON = 1;
+
 export interface PackPricing {
   size: number;
-  /** One-time base price for the pack, USD. */
+  /** One-time base price for the pack, USD ($1 per cartoon). */
   basePrice: number;
-  /** USD fee for engraving the buyer's custom domain on every cartoon. */
-  urlFee: number;
-  /** Per-cartoon URL fee (urlFee / size), shown in the itemized breakdown. */
-  urlFeePerCartoon: number;
-  /** basePrice + urlFee. */
-  totalWithUrl: number;
+  /** Engraving add-on for the pack: $10 setup + $1 per cartoon. */
+  engravingFee: number;
+  /** Per-cartoon engraving rate. */
+  engravingPerCartoon: number;
+  /** basePrice + engravingFee. */
+  totalWithEngraving: number;
   /** Funnel vanity-URL badge shown on the offer card. */
   vanityDomain: string;
 }
 
-/** Retail anchor shown on pack pages ($ per cartoon at full price). */
-export const RETAIL_PER_CARTOON = 100;
+function packPricing(size: number, vanityDomain: string): PackPricing {
+  const basePrice = size * PER_CARTOON_PRICE;
+  const engravingFee = ENGRAVING_BASE_FEE + size * ENGRAVING_PER_CARTOON;
+  return {
+    size,
+    basePrice,
+    engravingFee,
+    engravingPerCartoon: ENGRAVING_PER_CARTOON,
+    totalWithEngraving: basePrice + engravingFee,
+    vanityDomain,
+  };
+}
 
 /** Per-pack pricing — the interactive total calculator reads from here. */
 export const PACK_PRICING: Record<number, PackPricing> = {
-  10: { size: 10, basePrice: 10, urlFee: 100, urlFeePerCartoon: 10, totalWithUrl: 110, vanityDomain: 'nearinsanitypics.com' },
-  20: { size: 20, basePrice: 20, urlFee: 400, urlFeePerCartoon: 20, totalWithUrl: 420, vanityDomain: 'nearinsanitynow.com' },
-  30: { size: 30, basePrice: 30, urlFee: 900, urlFeePerCartoon: 30, totalWithUrl: 930, vanityDomain: 'nearinsanitymagic.com' },
-  50: { size: 50, basePrice: 50, urlFee: 2500, urlFeePerCartoon: 50, totalWithUrl: 2550, vanityDomain: 'nearinsanity4u.com' },
+  10: packPricing(10, 'nearinsanitypics.com'),
+  20: packPricing(20, 'nearinsanitynow.com'),
+  30: packPricing(30, 'nearinsanitymagic.com'),
+  50: packPricing(50, 'nearinsanity4u.com'),
 };
 
 /** Membership — Bob's proposed monthly price (details pending). */
@@ -108,7 +124,7 @@ export interface Offer {
   blurb: string;
   vanityDomain?: string;
   basePrice?: number;
-  totalWithUrl?: number;
+  totalWithEngraving?: number;
   monthlyPrice?: number;
 }
 
@@ -123,7 +139,7 @@ export const OFFERS: Offer[] = [
     blurb: 'The proposed starting pack — a starter set of Bob’s best cartoons.',
     vanityDomain: PACK_PRICING[10].vanityDomain,
     basePrice: PACK_PRICING[10].basePrice,
-    totalWithUrl: PACK_PRICING[10].totalWithUrl,
+    totalWithEngraving: PACK_PRICING[10].totalWithEngraving,
   },
   {
     key: 'packs/20',
@@ -134,7 +150,7 @@ export const OFFERS: Offer[] = [
     blurb: 'A deeper run through the favourites.',
     vanityDomain: PACK_PRICING[20].vanityDomain,
     basePrice: PACK_PRICING[20].basePrice,
-    totalWithUrl: PACK_PRICING[20].totalWithUrl,
+    totalWithEngraving: PACK_PRICING[20].totalWithEngraving,
   },
   {
     key: 'packs/30',
@@ -145,7 +161,7 @@ export const OFFERS: Offer[] = [
     blurb: 'A solid wall of absurdity.',
     vanityDomain: PACK_PRICING[30].vanityDomain,
     basePrice: PACK_PRICING[30].basePrice,
-    totalWithUrl: PACK_PRICING[30].totalWithUrl,
+    totalWithEngraving: PACK_PRICING[30].totalWithEngraving,
   },
   {
     key: 'packs/50',
@@ -156,7 +172,7 @@ export const OFFERS: Offer[] = [
     blurb: 'The near-complete shared catalog.',
     vanityDomain: PACK_PRICING[50].vanityDomain,
     basePrice: PACK_PRICING[50].basePrice,
-    totalWithUrl: PACK_PRICING[50].totalWithUrl,
+    totalWithEngraving: PACK_PRICING[50].totalWithEngraving,
   },
   {
     key: 'membership',

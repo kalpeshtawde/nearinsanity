@@ -1384,6 +1384,127 @@ export const NI_CSS = `
   margin-top: 26px;
 }
 
+/* Engraving question inside the checkout summary */
+.ni-checkout-engrave {
+  margin: 4px 0 16px;
+  padding: 14px;
+  border: 1.5px dashed var(--ni-line);
+  border-radius: 6px;
+  background: rgba(245, 179, 1, 0.08);
+}
+
+.ni-checkout-engrave h4 {
+  margin: 0 0 4px;
+  font-family: var(--ni-font-display);
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.ni-checkout-engrave p {
+  margin: 0 0 10px;
+  font-size: 0.86rem;
+  color: var(--ni-ink-soft);
+}
+
+/* Pricing page */
+.ni-pricing {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 26px;
+  align-items: stretch;
+  margin-top: 10px;
+}
+
+.ni-pricing-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--ni-paper-light);
+  border: 2px solid var(--ni-ink);
+  border-radius: 6px;
+  padding: 20px;
+  box-shadow: var(--ni-shadow);
+}
+
+.ni-pricing-card--membership {
+  border-color: var(--ni-red);
+}
+
+.ni-pricing-card__name {
+  margin: 4px 0 0;
+  font-family: var(--ni-font-display);
+  font-weight: 900;
+  font-size: 1.3rem;
+  line-height: 1.2;
+}
+
+.ni-pricing-card__blurb {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--ni-ink-soft);
+}
+
+.ni-pricing-card__price {
+  margin: 6px 0 0;
+  font-family: var(--ni-font-display);
+  font-weight: 900;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.ni-pricing-card__price span {
+  font-family: var(--ni-font-body);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ni-ink-soft);
+}
+
+.ni-pricing-card__sub {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ni-ink-soft);
+}
+
+.ni-pricing-card__rows {
+  margin: 8px 0 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ni-pricing-card__rows > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.92rem;
+}
+
+.ni-pricing-card__rows dt {
+  color: var(--ni-ink-soft);
+}
+
+.ni-pricing-card__rows dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.ni-pricing-card__total {
+  border-top: 2px solid var(--ni-line);
+  padding-top: 8px;
+}
+
+.ni-pricing-card__total dt,
+.ni-pricing-card__total dd {
+  font-weight: 900;
+  color: var(--ni-ink);
+}
+
+.ni-pricing-card__cta {
+  margin-top: auto;
+  text-align: center;
+}
+
 @media (max-width: 860px) {
   .ni-checkout {
     grid-template-columns: 1fr;

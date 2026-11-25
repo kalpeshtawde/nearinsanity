@@ -6,6 +6,7 @@ function parseRouteFromPath(): string {
   const path = window.location.pathname.replace(/\/+$/, '') || '/';
   if (path === '/gallery') return 'gallery';
   if (path === '/checkout') return 'checkout';
+  if (path === '/pricing') return 'pricing';
   if (path.startsWith('/packs/')) return path.slice(1); // 'packs/10'
   if (path === '/membership') return 'membership';
   return 'home';
@@ -15,6 +16,7 @@ const TITLES: Record<string, string> = {
   home: 'Near Insanity — Digital Cartoons by Bob Johnson',
   gallery: 'The Gallery — Near Insanity Digital Cartoons',
   checkout: 'Checkout — Near Insanity Digital Cartoons',
+  pricing: 'Pricing — Near Insanity Digital Cartoons',
   packs: 'Cartoon Packs — Near Insanity Digital Cartoons',
   membership: 'Membership — Near Insanity Digital Cartoons',
 };

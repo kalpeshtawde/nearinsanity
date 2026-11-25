@@ -5,9 +5,12 @@ import {
   ART_BASE,
   CARTOONS,
   COLLAGE_ASSETS,
+  ENGRAVING_BASE_FEE,
+  ENGRAVING_PER_CARTOON,
   OFFERS,
   PACK_PRICING,
   PACKS,
+  PER_CARTOON_PRICE,
   advanceResolution,
   isMissing,
   planForCount,
@@ -388,7 +391,7 @@ export function SelectionBar() {
 /** Checkout: review the selection, see the matched pack and pricing. */
 export function CheckoutPage() {
   const { selected, remove, clear } = useSelection();
-  const [branded, setBranded] = useState(true);
+  const [engraved, setEngraved] = useState(true);
   const [resolved, setResolved] = useState<Record<string, Resolution>>({});
   const count = selected.length;
 
@@ -412,9 +415,12 @@ export function CheckoutPage() {
   }
 
   const plan = planForCount(count);
-  const pricing = PACK_PRICING[plan];
-  const total = branded ? pricing.totalWithUrl : pricing.basePrice;
   const elevated = plan > PACKS[0].size;
+
+  // $1 per selected cartoon; engraving adds $10 setup + $1 per cartoon.
+  const cartoonsTotal = count * PER_CARTOON_PRICE;
+  const engravingTotal = ENGRAVING_BASE_FEE + count * ENGRAVING_PER_CARTOON;
+  const total = engraved ? cartoonsTotal + engravingTotal : cartoonsTotal;
 
   return (
     <section className="ni-section ni-section--band ni-page-head">
@@ -457,51 +463,66 @@ export function CheckoutPage() {
         <aside className="ni-checkout-summary">
           <h3>{plan}-Cartoon Pack</h3>
           <p className="ni-checkout-summary__sub">
-            {pricing.basePrice / pricing.size} per cartoon ·{' '}
+            ${PER_CARTOON_PRICE} per cartoon ·{' '}
             {elevated
               ? 'auto-elevated from your selection'
               : 'matches your selection'}
           </p>
-          <div
-            className="ni-mode-toggle"
-            role="radiogroup"
-            aria-label="Pack version"
-          >
-            <button
-              type="button"
-              role="radio"
-              aria-checked={branded}
-              className={branded ? 'is-selected' : ''}
-              onClick={() => setBranded(true)}
+
+          <div className="ni-checkout-engrave">
+            <h4>Add engraving?</h4>
+            <p>
+              Put your website address on every cartoon — $10 setup + $
+              {ENGRAVING_PER_CARTOON} per cartoon.
+            </p>
+            <div
+              className="ni-mode-toggle"
+              role="radiogroup"
+              aria-label="Engraving"
             >
-              With Your Website URL
-            </button>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={!branded}
-              className={!branded ? 'is-selected' : ''}
-              onClick={() => setBranded(false)}
-            >
-              Unbranded Pack
-            </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={engraved}
+                className={engraved ? 'is-selected' : ''}
+                onClick={() => setEngraved(true)}
+              >
+                Yes, engrave my URL
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={!engraved}
+                className={!engraved ? 'is-selected' : ''}
+                onClick={() => setEngraved(false)}
+              >
+                No engraving
+              </button>
+            </div>
           </div>
 
           <dl className="ni-checkout-summary__rows">
             <div>
               <dt>
-                {count} cartoon{count === 1 ? '' : 's'} × $
-                {pricing.basePrice / pricing.size}
+                {count} cartoon{count === 1 ? '' : 's'} × ${PER_CARTOON_PRICE}
               </dt>
-              <dd>${pricing.basePrice.toLocaleString()}</dd>
+              <dd>${cartoonsTotal.toLocaleString()}</dd>
             </div>
-            {branded && (
-              <div>
-                <dt>
-                  URL branding (${pricing.urlFeePerCartoon}/cartoon)
-                </dt>
-                <dd>${pricing.urlFee.toLocaleString()}</dd>
-              </div>
+            {engraved && (
+              <>
+                <div>
+                  <dt>Engraving setup</dt>
+                  <dd>${ENGRAVING_BASE_FEE.toLocaleString()}</dd>
+                </div>
+                <div>
+                  <dt>
+                    Engraving — {count} × ${ENGRAVING_PER_CARTOON}
+                  </dt>
+                  <dd>
+                    ${(count * ENGRAVING_PER_CARTOON).toLocaleString()}
+                  </dd>
+                </div>
+              </>
             )}
             <div className="ni-checkout-summary__total">
               <dt>Total</dt>
@@ -580,7 +601,7 @@ function tierPillLabel(o: Offer) {
 
 function tierPriceLine(o: Offer) {
   return o.size != null
-    ? `$${o.basePrice} / $${o.totalWithUrl?.toLocaleString()}`
+    ? `$${o.basePrice} / $${o.totalWithEngraving?.toLocaleString()}`
     : `$${o.monthlyPrice}/mo`;
 }
 
@@ -617,8 +638,8 @@ function OfferRail({ activeKey }: { activeKey: string }) {
 /** The single clean 2-column offer card (zero nested boxes). */
 function OfferCard({ activeKey }: { activeKey: string }) {
   const offer = OFFERS.find((o) => o.key === activeKey) ?? OFFERS[0];
-  // "With Your Website URL" is the default, highlighted version.
-  const [branded, setBranded] = useState(true);
+  // Engraving is the default, highlighted version.
+  const [engraved, setEngraved] = useState(true);
 
   // Membership card.
   if (offer.size == null) {
@@ -651,8 +672,7 @@ function OfferCard({ activeKey }: { activeKey: string }) {
   }
 
   const pricing = PACK_PRICING[offer.size];
-  const basePerCartoon = pricing.basePrice / pricing.size;
-  const total = branded ? pricing.totalWithUrl : pricing.basePrice;
+  const total = engraved ? pricing.totalWithEngraving : pricing.basePrice;
 
   return (
     <div className="ni-offer-card">
@@ -667,38 +687,38 @@ function OfferCard({ activeKey }: { activeKey: string }) {
       {/* Bottom row: pricing & CTA alongside license checkmarks */}
       <div className="ni-offer-card__bottom">
         <div className="ni-offer-card__pricing">
-          <div className="ni-mode-toggle" role="radiogroup" aria-label="Pack version">
+          <div className="ni-mode-toggle" role="radiogroup" aria-label="Engraving">
             <button
               type="button"
               role="radio"
-              aria-checked={branded}
-              className={branded ? 'is-selected' : ''}
-              onClick={() => setBranded(true)}
+              aria-checked={engraved}
+              className={engraved ? 'is-selected' : ''}
+              onClick={() => setEngraved(true)}
             >
-              With Your Website URL
+              With engraving
             </button>
             <button
               type="button"
               role="radio"
-              aria-checked={!branded}
-              className={!branded ? 'is-selected' : ''}
-              onClick={() => setBranded(false)}
+              aria-checked={!engraved}
+              className={!engraved ? 'is-selected' : ''}
+              onClick={() => setEngraved(false)}
             >
-              Unbranded Pack
+              No engraving
             </button>
           </div>
 
           <p className="ni-price-display">${total.toLocaleString()}</p>
           <p className="ni-price-sub">
-            {branded
-              ? `Includes $${pricing.basePrice} for ${pricing.size} cartoons + $${pricing.urlFee.toLocaleString()} URL branding ($${pricing.urlFeePerCartoon}/cartoon)`
-              : `$${basePerCartoon} per cartoon · Standard shared catalog without custom URL`}
+            {engraved
+              ? `Includes $${pricing.basePrice} for ${pricing.size} cartoons + $${pricing.engravingFee.toLocaleString()} engraving ($${ENGRAVING_BASE_FEE} setup + $${ENGRAVING_PER_CARTOON}/cartoon)`
+              : `$${PER_CARTOON_PRICE} per cartoon · Standard shared catalog without engraving`}
           </p>
 
           <a className="ni-btn ni-btn--primary ni-offer-card__cta" href={offer.href}>
-            {branded
-              ? `Get Branded Pack — $${pricing.totalWithUrl.toLocaleString()}`
-              : `Get Unbranded Pack — $${pricing.basePrice}`}{' '}
+            {engraved
+              ? `Get ${offer.size}-Pack with engraving — $${pricing.totalWithEngraving.toLocaleString()}`
+              : `Get ${offer.size}-Pack — $${pricing.basePrice}`}{' '}
             <span aria-hidden="true">→</span>
           </a>
         </div>
@@ -793,6 +813,96 @@ export function OfferPage({ route }: { route: string }) {
       </section>
       <OfferSection activeKey="membership" />
     </>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Pricing page                                                        */
+/* ------------------------------------------------------------------ */
+
+export function PricingPage() {
+  const membership = OFFERS.find((o) => o.key === 'membership');
+  return (
+    <section className="ni-section ni-section--band ni-page-head">
+      <SectionHeading
+        kicker="Pricing"
+        title="Simple pricing."
+        blurb={`Every cartoon is $${PER_CARTOON_PRICE}. Engraving — your website address printed on the artwork — is optional: $${ENGRAVING_BASE_FEE} setup + $${ENGRAVING_PER_CARTOON} per cartoon.`}
+      />
+      <div className="ni-pricing">
+        {OFFERS.filter((o) => o.size != null).map((o) => {
+          const pricing = PACK_PRICING[o.size as number];
+          return (
+            <article key={o.key} className="ni-pricing-card">
+              <span className="ni-funnel-badge">{o.vanityDomain}</span>
+              <h3 className="ni-pricing-card__name">{o.offerName}</h3>
+              <p className="ni-pricing-card__blurb">{o.blurb}</p>
+              <p className="ni-pricing-card__price">
+                ${pricing.basePrice.toLocaleString()}
+                <span> / {pricing.size} cartoons</span>
+              </p>
+              <p className="ni-pricing-card__sub">
+                ${PER_CARTOON_PRICE} per cartoon
+              </p>
+              <dl className="ni-pricing-card__rows">
+                <div>
+                  <dt>Without engraving</dt>
+                  <dd>${pricing.basePrice.toLocaleString()}</dd>
+                </div>
+                <div>
+                  <dt>Engraving add-on</dt>
+                  <dd>${pricing.engravingFee.toLocaleString()}</dd>
+                </div>
+                <div className="ni-pricing-card__total">
+                  <dt>With engraving</dt>
+                  <dd>${pricing.totalWithEngraving.toLocaleString()}</dd>
+                </div>
+              </dl>
+              <a
+                className="ni-btn ni-btn--primary ni-pricing-card__cta"
+                href={o.href}
+              >
+                View pack <span aria-hidden="true">→</span>
+              </a>
+            </article>
+          );
+        })}
+        {membership && (
+          <article className="ni-pricing-card ni-pricing-card--membership">
+            <span className="ni-funnel-badge">{membership.vanityDomain}</span>
+            <h3 className="ni-pricing-card__name">{membership.offerName}</h3>
+            <p className="ni-pricing-card__blurb">{membership.blurb}</p>
+            <p className="ni-pricing-card__price">
+              ${membership.monthlyPrice}
+              <span> / month</span>
+            </p>
+            <p className="ni-pricing-card__sub">
+              Ongoing access to the catalog
+            </p>
+            <dl className="ni-pricing-card__rows">
+              <div>
+                <dt>Billed</dt>
+                <dd>Monthly</dd>
+              </div>
+              <div className="ni-pricing-card__total">
+                <dt>Price</dt>
+                <dd>${membership.monthlyPrice}/mo</dd>
+              </div>
+            </dl>
+            <a
+              className="ni-btn ni-btn--primary ni-pricing-card__cta"
+              href={membership.href}
+            >
+              View membership <span aria-hidden="true">→</span>
+            </a>
+          </article>
+        )}
+      </div>
+      <p className="ni-gallery-note">
+        Engraving prints your website address on the artwork&rsquo;s plaque —
+        $10 setup plus $1 per cartoon. Without engraving, every cartoon is $1.
+      </p>
+    </section>
   );
 }
 
