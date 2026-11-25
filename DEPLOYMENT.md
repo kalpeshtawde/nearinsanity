@@ -95,10 +95,11 @@ or run the compose commands directly.
 
 Add the following to `/etc/nginx/conf.d/apps.conf` on your server. Start with
 the HTTP-only block below; Certbot then adds HTTPS and the redirect
-(see step 2). Routing:
+(see step 2). Routing — **everything is proxied to the containers**; nginx
+never reads host filesystem paths (uploads/static are served by Django
+itself through gunicorn):
 
-- `/admin/`, `/api/` → Django (gunicorn on 8001)
-- `/media/`, `/static/` → files served straight from disk (uploads + admin assets)
+- `/admin/`, `/api/`, `/static/`, `/media/` → Django (gunicorn on 8001)
 - everything else → React frontend (8087)
 
 ```nginx
@@ -131,14 +132,23 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-    # Uploaded cartoons (admin uploads) and collected admin static files
-    location /media/ {
-        alias /root/src/nearinsanity/backend/media/;
+    # Admin static assets + uploaded cartoons — served by Django itself
+    # (WhiteNoise / media view), proxied here.
+    location /static/ {
+        proxy_pass http://127.0.0.1:8001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
         expires 30d;
     }
 
-    location /static/ {
-        alias /root/src/nearinsanity/backend/staticfiles/;
+    location /media/ {
+        proxy_pass http://127.0.0.1:8001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
         expires 30d;
     }
 
