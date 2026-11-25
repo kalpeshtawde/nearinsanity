@@ -148,9 +148,6 @@ function Header({ route }: { route: string }) {
           <button type="button" onClick={() => goToSection('how-it-works')}>
             How It Works
           </button>
-          <button type="button" onClick={() => goToSection('ni-personalize')}>
-            Engraving Samples
-          </button>
           <button type="button" onClick={() => goToSection('ni-offers')}>
             Packs
           </button>
@@ -159,7 +156,7 @@ function Header({ route }: { route: string }) {
             className="ni-nav-cta"
             onClick={() => goToSection('ni-personalize')}
           >
-            View Samples
+            Engraving Sample
           </button>
         </nav>
       </div>
