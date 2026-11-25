@@ -58,6 +58,16 @@ export const PACKS = [
 ] as const;
 
 /**
+ * Smallest pack that covers `count` selected images. Picks the base 10-pack,
+ * then elevates to the next size as the selection grows (11 → 20, 21 → 30,
+ * 31 → 50). Anything beyond the largest pack stays at 50.
+ */
+export function planForCount(count: number): number {
+  const pack = PACKS.find((p) => p.size >= count);
+  return pack ? pack.size : PACKS[PACKS.length - 1].size;
+}
+
+/**
  * Single source of truth for pack pricing and the custom-URL customization.
  * Keep every rate here — the pages calculate totals from this object.
  */

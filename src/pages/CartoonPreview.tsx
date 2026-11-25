@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { NI_CSS } from './cartoon-styles';
-import { GalleryPage, HomePage, OfferPage } from './cartoon-pages';
+import { CheckoutPage, GalleryPage, HomePage, OfferPage, SelectionBar } from './cartoon-pages';
+import { SelectionProvider } from './selection';
 
 /**
  * Near Insanity — standalone concept preview for Bob Johnson's digital
@@ -182,6 +183,7 @@ function Footer() {
 /** Route dispatch for the seven demo pages. */
 function renderPage(route: string) {
   if (route === 'gallery') return <GalleryPage />;
+  if (route === 'checkout') return <CheckoutPage />;
   if (
     route === 'membership' ||
     route.startsWith('packs/')
@@ -228,11 +230,14 @@ export function CartoonPreview({ route }: { route: string }) {
   }, []);
 
   return (
-    <div className="ni-root">
-      <style>{NI_CSS}</style>
-      <Header route={route} />
-      <main>{renderPage(route)}</main>
-      <Footer />
-    </div>
+    <SelectionProvider>
+      <div className="ni-root">
+        <style>{NI_CSS}</style>
+        <Header route={route} />
+        <main>{renderPage(route)}</main>
+        <SelectionBar />
+        <Footer />
+      </div>
+    </SelectionProvider>
   );
 }

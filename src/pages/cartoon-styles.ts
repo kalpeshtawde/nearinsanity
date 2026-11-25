@@ -1116,6 +1116,267 @@ export const NI_CSS = `
   color: var(--ni-ink-soft);
 }
 
+/* ---------------- Selection + checkout ---------------- */
+
+.ni-card-wrap {
+  position: relative;
+}
+
+/* Checkbox pinned to the bottom-right corner of each gallery card. */
+.ni-select-check {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.ni-select-check input {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  border: 2.5px solid var(--ni-ink);
+  border-radius: 50%;
+  background: var(--ni-paper-light);
+  box-shadow: 2px 2px 0 rgba(38, 32, 26, 0.28);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.ni-select-check input:hover {
+  transform: scale(1.08);
+}
+
+.ni-select-check input:checked {
+  background: var(--ni-red);
+  border-color: var(--ni-red);
+}
+
+.ni-select-check input:checked::after {
+  content: '';
+  width: 13px;
+  height: 7px;
+  border-left: 3px solid #fff;
+  border-bottom: 3px solid #fff;
+  transform: rotate(-45deg) translate(1px, -2px);
+}
+
+/* Floating selection bar (bottom center, visible once items are picked). */
+.ni-select-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 12px 10px 18px;
+  background: var(--ni-ink);
+  color: var(--ni-paper);
+  border-radius: 999px;
+  box-shadow: 6px 6px 0 rgba(38, 32, 26, 0.28);
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+
+.ni-select-bar__count {
+  font-weight: 800;
+}
+
+.ni-select-bar__plan {
+  color: var(--ni-yellow);
+  font-weight: 700;
+}
+
+.ni-select-bar__clear {
+  background: none;
+  border: none;
+  padding: 0;
+  color: rgba(246, 239, 223, 0.8);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-family: inherit;
+}
+
+.ni-select-bar__cta {
+  display: inline-block;
+  background: var(--ni-red);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.92rem;
+  padding: 8px 18px;
+  border-radius: 999px;
+  text-decoration: none;
+  border: 2px solid var(--ni-red);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.ni-select-bar__cta:hover {
+  background: transparent;
+  color: var(--ni-red);
+}
+
+/* Checkout page */
+.ni-checkout {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 34px;
+  align-items: start;
+  margin-top: 10px;
+}
+
+.ni-checkout__items {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 18px;
+}
+
+.ni-checkout-item {
+  position: relative;
+  background: var(--ni-paper-light);
+  border: 2px solid var(--ni-ink);
+  border-radius: 6px;
+  padding: 10px;
+  box-shadow: var(--ni-shadow);
+}
+
+.ni-checkout-item img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1.5px solid var(--ni-line);
+}
+
+.ni-checkout-item__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 2px 0;
+}
+
+.ni-checkout-item__title {
+  font-family: var(--ni-font-display);
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.ni-checkout-item__tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ni-ink-soft);
+}
+
+.ni-checkout-item__remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 30px;
+  height: 30px;
+}
+
+.ni-checkout-summary {
+  background: var(--ni-paper-light);
+  border: 2px solid var(--ni-ink);
+  border-radius: 6px;
+  box-shadow: var(--ni-shadow);
+  padding: 22px;
+  position: sticky;
+  top: 90px;
+}
+
+.ni-checkout-summary h3 {
+  font-family: var(--ni-font-display);
+  font-weight: 900;
+  font-size: 1.5rem;
+  margin: 0 0 4px;
+}
+
+.ni-checkout-summary__sub {
+  margin: 0 0 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ni-ink-soft);
+}
+
+.ni-checkout-summary__rows {
+  margin: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ni-checkout-summary__rows > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.95rem;
+}
+
+.ni-checkout-summary__rows dt {
+  color: var(--ni-ink-soft);
+}
+
+.ni-checkout-summary__rows dd {
+  font-weight: 700;
+  margin: 0;
+}
+
+.ni-checkout-summary__total {
+  border-top: 2px solid var(--ni-line);
+  padding-top: 10px;
+}
+
+.ni-checkout-summary__total dt,
+.ni-checkout-summary__total dd {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: var(--ni-ink);
+}
+
+.ni-checkout-summary__cta {
+  width: 100%;
+  margin-top: 6px;
+  text-align: center;
+}
+
+.ni-checkout-summary__link {
+  display: block;
+  margin-top: 14px;
+  text-align: center;
+  color: var(--ni-ink-soft);
+  font-weight: 600;
+}
+
+.ni-checkout__clear {
+  margin-top: 26px;
+}
+
+@media (max-width: 860px) {
+  .ni-checkout {
+    grid-template-columns: 1fr;
+  }
+  .ni-checkout-summary {
+    position: static;
+  }
+  .ni-select-bar {
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: calc(100vw - 24px);
+    white-space: normal;
+    text-align: center;
+    border-radius: 18px;
+  }
+}
+
 /* ---------------- Reduced motion ---------------- */
 
 @media (prefers-reduced-motion: reduce) {

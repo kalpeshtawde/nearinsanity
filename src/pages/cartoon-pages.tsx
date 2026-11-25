@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { fetchGalleryCartoons } from './gallery-api';
+import { useSelection } from './selection';
 import {
   ART_BASE,
   CARTOONS,
   COLLAGE_ASSETS,
   OFFERS,
   PACK_PRICING,
+  PACKS,
   advanceResolution,
   isMissing,
+  planForCount,
   srcFor,
   type Cartoon,
   type Offer,
@@ -85,6 +88,8 @@ function CartoonCard({
   onOpen,
   className = '',
   showTag = true,
+  selected = false,
+  onToggle,
 }: {
   cartoon: Cartoon;
   resolved: Record<string, Resolution>;
@@ -92,26 +97,43 @@ function CartoonCard({
   onOpen: () => void;
   className?: string;
   showTag?: boolean;
+  selected?: boolean;
+  onToggle?: () => void;
 }) {
   return (
-    <button type="button" className={`ni-card ${className}`} onClick={onOpen}>
-      <span className="ni-card__frame">
-        {isMissing(cartoon, resolved) ? (
-          <ArtworkPlaceholder cartoon={cartoon} />
-        ) : (
-          <img
-            src={srcFor(cartoon, resolved)}
-            alt={cartoon.alt}
-            loading="lazy"
-            onError={onError}
+    <div className="ni-card-wrap">
+      <button type="button" className={`ni-card ${className}`} onClick={onOpen}>
+        <span className="ni-card__frame">
+          {isMissing(cartoon, resolved) ? (
+            <ArtworkPlaceholder cartoon={cartoon} />
+          ) : (
+            <img
+              src={srcFor(cartoon, resolved)}
+              alt={cartoon.alt}
+              loading="lazy"
+              onError={onError}
+            />
+          )}
+        </span>
+        <span className="ni-card__caption">
+          <span className="ni-card__title">{cartoon.title}</span>
+          {showTag && <span className="ni-card__tag">{cartoon.tag}</span>}
+        </span>
+      </button>
+      {onToggle && (
+        <label
+          className="ni-select-check"
+          title={selected ? 'Remove from selection' : 'Add to selection'}
+        >
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={onToggle}
+            aria-label={`${selected ? 'Remove' : 'Add'} ${cartoon.title} ${selected ? 'from' : 'to'} selection`}
           />
-        )}
-      </span>
-      <span className="ni-card__caption">
-        <span className="ni-card__title">{cartoon.title}</span>
-        {showTag && <span className="ni-card__tag">{cartoon.tag}</span>}
-      </span>
-    </button>
+        </label>
+      )}
+    </div>
   );
 }
 
@@ -235,6 +257,7 @@ export function GalleryPage() {
   const [cartoons, setCartoons] = useState<Cartoon[]>(CARTOONS);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const lastFocused = useRef<HTMLElement | null>(null);
+  const { isSelected, toggle } = useSelection();
 
   // Load published images from the backend; keep the bundled list as a
   // fallback when the API is unreachable.
@@ -297,12 +320,15 @@ export function GalleryPage() {
               resolved={resolved}
               onError={() => handleImgError(cartoon)}
               onOpen={() => openLightbox(i)}
+              selected={isSelected(cartoon.id)}
+              onToggle={() => toggle(cartoon)}
             />
           ))}
         </div>
         <p className="ni-gallery-note">
           The live catalog — cartoons added in the admin panel appear here
-          automatically.
+          automatically. Tick the checkbox on a cartoon to add it to your
+          selection, then head to checkout.
         </p>
       </section>
 
@@ -318,6 +344,195 @@ export function GalleryPage() {
         />
       )}
     </>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Selection bar + checkout                                            */
+/* ------------------------------------------------------------------ */
+
+/** Floating bar shown once the user has picked cartoons. */
+export function SelectionBar() {
+  const { selected, clear, max } = useSelection();
+  const count = selected.length;
+  if (count === 0) return null;
+
+  const plan = planForCount(count);
+  const prevPlan = planForCount(count - 1);
+  const elevated = prevPlan !== plan;
+  const basePlan = PACKS[0].size;
+
+  return (
+    <div className="ni-select-bar">
+      <span className="ni-select-bar__count">
+        {count} selected{count >= max ? ` (max ${max})` : ''}
+      </span>
+      <span className="ni-select-bar__plan">
+        {elevated
+          ? `Elevated to the ${plan}-Pack`
+          : plan === basePlan
+            ? `Base ${plan}-Pack`
+            : `${plan}-Pack`}
+      </span>
+      <button type="button" className="ni-select-bar__clear" onClick={clear}>
+        Clear
+      </button>
+      <a className="ni-select-bar__cta" href="/checkout">
+        Checkout <span aria-hidden="true">→</span>
+      </a>
+    </div>
+  );
+}
+
+/** Checkout: review the selection, see the matched pack and pricing. */
+export function CheckoutPage() {
+  const { selected, remove, clear } = useSelection();
+  const [branded, setBranded] = useState(true);
+  const [resolved, setResolved] = useState<Record<string, Resolution>>({});
+  const count = selected.length;
+
+  const handleImgError = (cartoon: Cartoon) => {
+    setResolved((prev) => advanceResolution(prev, cartoon.id));
+  };
+
+  if (count === 0) {
+    return (
+      <section className="ni-section ni-section--band ni-page-head">
+        <SectionHeading
+          kicker="Checkout"
+          title="Your selection is empty."
+          blurb="Pick cartoons from the gallery first — the base plan starts at 10."
+        />
+        <a className="ni-btn ni-btn--primary" href="/gallery">
+          Browse the gallery <span aria-hidden="true">→</span>
+        </a>
+      </section>
+    );
+  }
+
+  const plan = planForCount(count);
+  const pricing = PACK_PRICING[plan];
+  const total = branded ? pricing.totalWithUrl : pricing.basePrice;
+  const elevated = plan > PACKS[0].size;
+
+  return (
+    <section className="ni-section ni-section--band ni-page-head">
+      <SectionHeading
+        kicker="Checkout"
+        title="Review your selection."
+        blurb={
+          elevated
+            ? `${count} cartoons selected — that's above the ${PACKS[0].size}-Pack, so you've been elevated to the ${plan}-Cartoon Pack.`
+            : `${count} cartoon${count === 1 ? '' : 's'} selected — that matches the ${plan}-Cartoon Pack.`
+        }
+      />
+
+      <div className="ni-checkout">
+        <div className="ni-checkout__items">
+          {selected.map((c) => (
+            <div key={c.id} className="ni-checkout-item">
+              <img
+                src={srcFor(c, resolved)}
+                alt={c.alt}
+                loading="lazy"
+                onError={() => handleImgError(c)}
+              />
+              <div className="ni-checkout-item__meta">
+                <span className="ni-checkout-item__title">{c.title}</span>
+                <span className="ni-checkout-item__tag">{c.tag}</span>
+              </div>
+              <button
+                type="button"
+                className="ni-iconbtn ni-checkout-item__remove"
+                onClick={() => remove(c.id)}
+                aria-label={`Remove ${c.title}`}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <aside className="ni-checkout-summary">
+          <h3>{plan}-Cartoon Pack</h3>
+          <p className="ni-checkout-summary__sub">
+            {pricing.basePrice / pricing.size} per cartoon ·{' '}
+            {elevated
+              ? 'auto-elevated from your selection'
+              : 'matches your selection'}
+          </p>
+          <div
+            className="ni-mode-toggle"
+            role="radiogroup"
+            aria-label="Pack version"
+          >
+            <button
+              type="button"
+              role="radio"
+              aria-checked={branded}
+              className={branded ? 'is-selected' : ''}
+              onClick={() => setBranded(true)}
+            >
+              With Your Website URL
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={!branded}
+              className={!branded ? 'is-selected' : ''}
+              onClick={() => setBranded(false)}
+            >
+              Unbranded Pack
+            </button>
+          </div>
+
+          <dl className="ni-checkout-summary__rows">
+            <div>
+              <dt>
+                {count} cartoon{count === 1 ? '' : 's'} × $
+                {pricing.basePrice / pricing.size}
+              </dt>
+              <dd>${pricing.basePrice.toLocaleString()}</dd>
+            </div>
+            {branded && (
+              <div>
+                <dt>
+                  URL branding (${pricing.urlFeePerCartoon}/cartoon)
+                </dt>
+                <dd>${pricing.urlFee.toLocaleString()}</dd>
+              </div>
+            )}
+            <div className="ni-checkout-summary__total">
+              <dt>Total</dt>
+              <dd>${total.toLocaleString()}</dd>
+            </div>
+          </dl>
+
+          <button
+            type="button"
+            className="ni-btn ni-btn--primary ni-checkout-summary__cta"
+            onClick={() =>
+              window.alert(
+                'Payment is coming soon — this storefront demo does not process orders yet.',
+              )
+            }
+          >
+            Complete checkout — ${total.toLocaleString()}
+          </button>
+          <a className="ni-checkout-summary__link" href="/gallery">
+            ← Continue shopping
+          </a>
+        </aside>
+      </div>
+
+      <button
+        type="button"
+        className="ni-btn ni-checkout__clear"
+        onClick={clear}
+      >
+        Clear all selections
+      </button>
+    </section>
   );
 }
 
