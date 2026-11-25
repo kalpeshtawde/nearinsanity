@@ -25,9 +25,9 @@ echo "✅ Checking container status..."
 docker ps | grep nearinsanity
 
 echo "🎉 Deployment complete!"
-echo "Website should be accessible at http://localhost:8084"
+echo "Website should be accessible at http://localhost:8087"
 echo ""
 echo "Next steps:"
-echo "1. Test locally: curl http://localhost:8084"
+echo "1. Test locally: curl http://localhost:8087"
 echo "2. Setup SSL: sudo certbot --nginx -d nearinsanity.com -d www.nearinsanity.com"
 echo "3. Reload Nginx: sudo nginx -t && sudo systemctl reload nginx"

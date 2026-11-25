@@ -76,7 +76,7 @@ production (also on port 5178 by default).
 ## Backend (Django admin + REST API)
 
 The backend is fully containerized, both locally and in production: **web**
-(React, port 8084) + **backend** (Django, port 8001) run from
+(React, port 8087) + **backend** (Django, port 8001) run from
 `docker-compose.prod.yml`, and the **database** (postgres:15, port 5441) runs
 from `backend/docker-compose.db.yml`. Credentials come from `backend/.env`
 (gitignored, per-environment).
@@ -112,7 +112,7 @@ docker-compose -f docker-compose.prod.yml exec backend \
 
 | Service | URL | Notes |
 | --- | --- | --- |
-| Frontend | http://127.0.0.1:8084 | static build; use Vite (`npm run dev`, port 5178) for frontend work |
+| Frontend | http://127.0.0.1:8087 | static build; use Vite (`npm run dev`, port 5178) for frontend work |
 | Backend API | http://127.0.0.1:8001/api/v1/ | admin + API |
 | Django admin | http://127.0.0.1:8001/admin/ | log in with the superuser above |
 
@@ -171,7 +171,7 @@ cd backend
 ## Deployment
 
 See `DEPLOYMENT.md`. The production Docker Compose serves the built app on
-port `8084` (host) → `80` (container):
+port `8087` (host) → `80` (container):
 
 ```bash
 docker-compose -f docker-compose.prod.yml up -d --build

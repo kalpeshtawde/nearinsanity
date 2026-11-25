@@ -16,7 +16,7 @@ Three containers locally, two on the server:
 
 | Service | Container | Host port | Server |
 | --- | --- | --- | --- |
-| Frontend (React, nginx) | `nearinsanity-web` | 8084 | same |
+| Frontend (React, nginx) | `nearinsanity-web` | 8087 | same |
 | Backend (Django + gunicorn) | `nearinsanity-backend` | 8001 | same |
 | Database (postgres:15) | `nearinsanity-db` | 5441 | **physical Postgres 15** (no container) |
 
@@ -58,7 +58,7 @@ docker-compose -f docker-compose.prod.yml exec backend \
          python manage.py createsuperuser --noinput"
 
 # sanity checks
-curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8084/   # frontend
+curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8087/   # frontend
 curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8001/api/v1/gallery/
 ```
 
@@ -99,7 +99,7 @@ the HTTP-only block below; Certbot then adds HTTPS and the redirect
 
 - `/admin/`, `/api/` → Django (gunicorn on 8001)
 - `/media/`, `/static/` → files served straight from disk (uploads + admin assets)
-- everything else → React frontend (8084)
+- everything else → React frontend (8087)
 
 ```nginx
 # Near Insanity - HTTP (initial - Certbot will add HTTPS)
@@ -144,7 +144,7 @@ server {
 
     # React SPA (everything else)
     location / {
-        proxy_pass http://127.0.0.1:8084;
+        proxy_pass http://127.0.0.1:8087;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

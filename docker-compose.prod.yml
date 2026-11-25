@@ -8,7 +8,7 @@ services:
       dockerfile: Dockerfile
     container_name: nearinsanity-web
     ports:
-      - "8084:80"
+      - "8087:80"
     restart: unless-stopped
     environment:
       - NODE_ENV=production
