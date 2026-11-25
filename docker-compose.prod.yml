@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  nearinsanity-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nearinsanity-web
+    ports:
+      - "8084:80"
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    networks:
+      - nearinsanity-network
+
+networks:
+  nearinsanity-network:
+    driver: bridge
