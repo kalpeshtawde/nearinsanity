@@ -27,12 +27,16 @@ interface AuthContextValue {
   token: string | null;
   account: Account | null;
   loading: boolean;
+  /** Whether the backend has Stripe keys configured. */
+  stripeEnabled: boolean;
   register: (email: string, password: string) => Promise<Account>;
   login: (email: string, password: string) => Promise<Account>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
   /** Buy a funnel plan; returns the new credit balance. */
   subscribe: (planSize: number) => Promise<number>;
+  /** Redirect to Stripe Checkout for a plan purchase. */
+  startStripeCheckout: (planSize: number) => Promise<void>;
   /** Spend credits on the selected images. */
   checkout: (
     imageIds: string[],
@@ -86,6 +90,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
   const [account, setAccount] = useState<Account | null>(null);
   const [loading, setLoading] = useState(true);
+  const [stripeEnabled, setStripeEnabled] = useState(false);
+
+  // Public runtime config: is Stripe configured on the backend?
+  useEffect(() => {
+    api<{ stripe_enabled: boolean }>('/api/v1/config/')
+      .then((cfg) => setStripeEnabled(Boolean(cfg.stripe_enabled)))
+      .catch(() => setStripeEnabled(false));
+  }, []);
 
   const refresh = useCallback(async () => {
     if (!token) {
@@ -156,6 +168,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [token],
   );
 
+  const startStripeCheckout = useCallback(
+    async (planSize: number) => {
+      const res = await api<{ url: string }>(
+        '/api/v1/stripe/checkout-session/',
+        { method: 'POST', token, body: { plan_size: planSize } },
+      );
+      window.location.assign(res.url);
+    },
+    [token],
+  );
+
   const checkout = useCallback(
     async (imageIds: string[], engraving: boolean, url?: string) => {
       const res = await api<{ order: { id: string }; credits: number }>(
@@ -181,14 +204,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token,
       account,
       loading,
+      stripeEnabled,
       register,
       login,
       logout,
       refresh,
       subscribe,
+      startStripeCheckout,
       checkout,
     }),
-    [token, account, loading, register, login, logout, refresh, subscribe, checkout],
+    [
+      token,
+      account,
+      loading,
+      stripeEnabled,
+      register,
+      login,
+      logout,
+      refresh,
+      subscribe,
+      startStripeCheckout,
+      checkout,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

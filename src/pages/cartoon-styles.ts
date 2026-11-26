@@ -1625,6 +1625,32 @@ export const NI_CSS = `
   border-radius: 4px;
 }
 
+/* Payment-return banner */
+.ni-paid-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: var(--ni-yellow);
+  color: var(--ni-ink);
+  font-weight: 700;
+  font-size: 0.92rem;
+  padding: 10px 16px;
+  border-bottom: 2px solid var(--ni-ink);
+}
+
+.ni-paid-banner button {
+  background: var(--ni-ink);
+  color: var(--ni-paper-light);
+  border: 2px solid var(--ni-ink);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
 /* ---------------- Reduced motion ---------------- */
 
 @media (prefers-reduced-motion: reduce) {

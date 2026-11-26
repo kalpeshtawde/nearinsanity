@@ -225,3 +225,140 @@ class CheckoutView(APIView):
             {"order": OrderSerializer(order).data, "credits": account.balance},
             status=201,
         )
+
+
+# ---------------------------------------------------------------------------
+# Stripe payments
+# ---------------------------------------------------------------------------
+
+import stripe  # noqa: E402
+from decimal import Decimal  # noqa: E402
+
+from django.conf import settings  # noqa: E402
+from django.contrib.auth import get_user_model  # noqa: E402
+
+User = get_user_model()
+
+
+class ConfigView(APIView):
+    """Public runtime config the storefront needs (e.g. Stripe availability)."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response({"stripe_enabled": bool(settings.STRIPE_SECRET_KEY)})
+
+
+class StripeCheckoutSessionView(APIView):
+    """Create a Stripe Checkout Session for a plan purchase."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if not settings.STRIPE_SECRET_KEY:
+            return Response({"detail": "Stripe is not configured."}, status=400)
+
+        serializer = SubscribeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        plan_size = serializer.validated_data["plan_size"]
+        price_id = settings.STRIPE_PRICE_IDS.get(plan_size)
+        if not price_id:
+            return Response(
+                {"detail": f"No Stripe price configured for the {plan_size}-pack."},
+                status=400,
+            )
+
+        stripe.api_key = settings.STRIPE_SECRET_KEY
+        try:
+            session = stripe.checkout.Session.create(
+                mode="payment",
+                line_items=[{"price": price_id, "quantity": 1}],
+                customer_email=request.user.email or None,
+                client_reference_id=str(request.user.id),
+                metadata={
+                    "plan_size": str(plan_size),
+                    "user_id": str(request.user.id),
+                },
+                success_url=f"{settings.FRONTEND_URL}/checkout?status=success",
+                cancel_url=f"{settings.FRONTEND_URL}/pricing?status=cancelled",
+            )
+        except stripe.error.StripeError as exc:
+            return Response({"detail": str(exc)}, status=502)
+
+        return Response({"url": session.url, "id": session.id}, status=201)
+
+
+class StripeWebhookView(APIView):
+    """Grant credits when Stripe confirms a completed checkout.
+
+    Idempotent: the Stripe session id is stored on the Subscription, so
+    repeated webhook deliveries never double-grant credits.
+    """
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        if not settings.STRIPE_WEBHOOK_SECRET:
+            return Response(
+                {"detail": "Stripe webhook secret is not configured."}, status=400
+            )
+
+        signature = request.headers.get("Stripe-Signature", "")
+        try:
+            event = stripe.Webhook.construct_event(
+                request.body, signature, settings.STRIPE_WEBHOOK_SECRET
+            )
+        except (ValueError, stripe.error.SignatureVerificationError):
+            return Response({"detail": "Invalid Stripe signature."}, status=400)
+
+        if event["type"] == "checkout.session.completed":
+            self._grant_credits(event["data"]["object"])
+
+        return Response({"received": True})
+
+    def _grant_credits(self, session) -> None:
+        metadata = session.get("metadata") or {}
+        try:
+            plan_size = int(metadata.get("plan_size", 0))
+        except (TypeError, ValueError):
+            return
+        user_id = metadata.get("user_id")
+        session_id = session.get("id") or ""
+        if plan_size not in PLANS or not user_id:
+            return
+
+        plan = PLANS[plan_size]
+        with transaction.atomic():
+            if session_id and Subscription.objects.filter(
+                stripe_session_id=session_id
+            ).exists():
+                return  # already granted
+
+            try:
+                user = User.objects.get(pk=user_id)
+            except (User.DoesNotExist, ValueError):
+                return
+
+            account, _ = CreditAccount.objects.select_for_update().get_or_create(
+                user=user
+            )
+            amount = Decimal(session.get("amount_total") or 0) / Decimal("100")
+
+            Subscription.objects.create(
+                user=user,
+                plan_size=plan_size,
+                amount=amount,
+                credits_granted=plan["credits"],
+                provider="stripe",
+                stripe_session_id=session_id,
+            )
+            account.balance += plan["credits"]
+            account.tier = plan_size
+            account.save(update_fields=["balance", "tier", "updated_at"])
+            CreditTransaction.objects.create(
+                account=account,
+                delta=plan["credits"],
+                balance_after=account.balance,
+                reason=CreditTransaction.Reason.SUBSCRIPTION,
+            )

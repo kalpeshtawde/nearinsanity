@@ -1,13 +1,15 @@
 from io import BytesIO
+from types import SimpleNamespace
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from PIL import Image
 from rest_framework.test import APIClient
 
-from .models import GalleryImage
+from .models import CreditAccount, GalleryImage
 
 
 def make_image_file(name="cartoon.png") -> SimpleUploadedFile:
@@ -286,3 +288,104 @@ class AccountCreditApiTests(TestCase):
             format="json",
         )
         self.assertEqual(resp.status_code, 400)
+
+
+class StripeApiTests(TestCase):
+    """Stripe checkout-session creation and webhook credit granting."""
+
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="stripe@example.com",
+            email="stripe@example.com",
+            password="password123",
+        )
+        CreditAccount.objects.create(user=self.user, balance=0)
+        self.client = APIClient()
+        self.client.force_authenticate(self.user)
+
+    def test_config_reports_stripe_disabled_without_key(self):
+        resp = APIClient().get(reverse("config"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(resp.data["stripe_enabled"])
+
+    def test_checkout_session_requires_stripe_config(self):
+        resp = self.client.post(
+            reverse("stripe-checkout-session"), {"plan_size": 10}, format="json"
+        )
+        self.assertEqual(resp.status_code, 400)
+
+    @override_settings(
+        STRIPE_SECRET_KEY="sk_test_dummy",
+        STRIPE_PRICE_IDS={10: "price_dummy"},
+        FRONTEND_URL="http://localhost:5178",
+    )
+    @patch("gallery.views.stripe.checkout.Session.create")
+    def test_checkout_session_returns_url(self, create):
+        create.return_value = SimpleNamespace(
+            url="https://checkout.stripe.test/session", id="cs_test_1"
+        )
+        resp = self.client.post(
+            reverse("stripe-checkout-session"), {"plan_size": 10}, format="json"
+        )
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(resp.data["url"], "https://checkout.stripe.test/session")
+        kwargs = create.call_args.kwargs
+        self.assertEqual(kwargs["metadata"]["plan_size"], "10")
+        self.assertEqual(kwargs["metadata"]["user_id"], str(self.user.id))
+
+    def test_webhook_requires_secret(self):
+        resp = APIClient().post(
+            reverse("stripe-webhook"), data=b"{}", content_type="application/json"
+        )
+        self.assertEqual(resp.status_code, 400)
+
+    @override_settings(STRIPE_WEBHOOK_SECRET="whsec_test")
+    def test_webhook_rejects_invalid_signature(self):
+        resp = APIClient().post(
+            reverse("stripe-webhook"),
+            data=b"{}",
+            content_type="application/json",
+            HTTP_STRIPE_SIGNATURE="invalid",
+        )
+        self.assertEqual(resp.status_code, 400)
+
+    @override_settings(STRIPE_WEBHOOK_SECRET="whsec_test")
+    @patch("gallery.views.stripe.Webhook.construct_event")
+    def test_webhook_grants_credits_once(self, construct):
+        construct.return_value = {
+            "type": "checkout.session.completed",
+            "data": {
+                "object": {
+                    "id": "cs_test_abc",
+                    "amount_total": 11000,
+                    "metadata": {
+                        "plan_size": "10",
+                        "user_id": str(self.user.id),
+                    },
+                }
+            },
+        }
+        client = APIClient()
+        payload = b"{}"
+        first = client.post(
+            reverse("stripe-webhook"),
+            data=payload,
+            content_type="application/json",
+            HTTP_STRIPE_SIGNATURE="sig",
+        )
+        self.assertEqual(first.status_code, 200)
+
+        self.user.credit_account.refresh_from_db()
+        self.assertEqual(self.user.credit_account.balance, 110)
+        self.assertEqual(self.user.credit_account.tier, 10)
+
+        # Duplicate delivery (Stripe retries) must not double-grant.
+        second = client.post(
+            reverse("stripe-webhook"),
+            data=payload,
+            content_type="application/json",
+            HTTP_STRIPE_SIGNATURE="sig",
+        )
+        self.assertEqual(second.status_code, 200)
+        self.user.credit_account.refresh_from_db()
+        self.assertEqual(self.user.credit_account.balance, 110)

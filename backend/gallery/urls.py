@@ -18,6 +18,14 @@ urlpatterns = [
     path("me/", views.MeView.as_view(), name="me"),
     path("subscribe/", views.SubscribeView.as_view(), name="subscribe"),
     path("checkout/", views.CheckoutView.as_view(), name="checkout"),
+    # Runtime config + Stripe payments
+    path("config/", views.ConfigView.as_view(), name="config"),
+    path(
+        "stripe/checkout-session/",
+        views.StripeCheckoutSessionView.as_view(),
+        name="stripe-checkout-session",
+    ),
+    path("stripe/webhook/", views.StripeWebhookView.as_view(), name="stripe-webhook"),
     # Staff CRUD API (requires admin login)
     path("admin/", include(router.urls)),
     # OpenAPI schema (JSON)

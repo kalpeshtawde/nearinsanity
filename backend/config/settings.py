@@ -219,6 +219,9 @@ STRIPE_PRICE_IDS = {
 STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
 
+# Where Stripe redirects back to after a successful payment (the frontend).
+FRONTEND_URL = os.environ.get("FRONTEND_URL", FRONTEND_ORIGIN)
+
 
 # Production hardening (applied when DJANGO_DEBUG=0; the site is served
 # behind nginx with TLS terminated at the edge).

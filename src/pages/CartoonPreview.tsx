@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { NI_CSS } from './cartoon-styles';
 import {
   CheckoutPage,
@@ -219,6 +219,37 @@ function Footer() {
   );
 }
 
+/** Shows a confirmation after returning from Stripe Checkout. */
+function StripeReturnBanner() {
+  const { refresh } = useAuth();
+  const [visible, setVisible] = useState(
+    () => new URLSearchParams(window.location.search).get('status') === 'success',
+  );
+
+  useEffect(() => {
+    if (!visible) return;
+    // The webhook grants credits; refresh shortly after landing.
+    const t = window.setTimeout(() => void refresh(), 1500);
+    return () => window.clearTimeout(t);
+  }, [visible, refresh]);
+
+  if (!visible) return null;
+  return (
+    <div className="ni-paid-banner">
+      Payment received — credits added to your account.
+      <button
+        type="button"
+        onClick={() => {
+          void refresh();
+          setVisible(false);
+        }}
+      >
+        Got it
+      </button>
+    </div>
+  );
+}
+
 /** Route dispatch for the seven demo pages. */
 function renderPage(route: string) {
   if (route === 'gallery') return <GalleryPage />;
@@ -276,6 +307,7 @@ export function CartoonPreview({ route }: { route: string }) {
         <div className="ni-root">
           <style>{NI_CSS}</style>
           <Header route={route} />
+          <StripeReturnBanner />
           <main>{renderPage(route)}</main>
           <SelectionBar />
           <Footer />

@@ -135,6 +135,16 @@ class Subscription(models.Model):
     plan_size = models.PositiveIntegerField(help_text="10 / 20 / 30 / 50 cartoons")
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     credits_granted = models.PositiveIntegerField()
+    provider = models.CharField(
+        max_length=20, default="simulated", help_text="simulated or stripe"
+    )
+    stripe_session_id = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        db_index=True,
+        help_text="Stripe Checkout session that paid for this (idempotency key).",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

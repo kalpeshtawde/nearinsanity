@@ -981,7 +981,14 @@ export function PricingPage() {
 /* ------------------------------------------------------------------ */
 
 export function SigninPage() {
-  const { account, login, register, subscribe } = useAuth();
+  const {
+    account,
+    login,
+    register,
+    subscribe,
+    stripeEnabled,
+    startStripeCheckout,
+  } = useAuth();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -1005,6 +1012,10 @@ export function SigninPage() {
         await login(email, password);
       }
       if (plan) {
+        if (stripeEnabled) {
+          await startStripeCheckout(plan); // redirects to Stripe
+          return;
+        }
         setSubscribedCredits(await subscribe(plan));
       } else {
         window.location.assign(next);
@@ -1021,6 +1032,10 @@ export function SigninPage() {
     setError(null);
     setBusy(true);
     try {
+      if (stripeEnabled) {
+        await startStripeCheckout(plan); // redirects to Stripe
+        return;
+      }
       setSubscribedCredits(await subscribe(plan));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong.');
@@ -1076,8 +1091,10 @@ export function SigninPage() {
               disabled={busy}
             >
               {busy
-                ? 'Adding credits…'
-                : `Subscribe — +${PACK_PRICING[plan].credits.toLocaleString()} credits`}
+                ? 'Redirecting…'
+                : stripeEnabled
+                  ? `Pay with Stripe — $${PACK_PRICING[plan].totalWithEngraving.toLocaleString()}`
+                  : `Subscribe — +${PACK_PRICING[plan].credits.toLocaleString()} credits`}
             </button>
           </div>
         ) : (
@@ -1154,10 +1171,14 @@ export function SigninPage() {
               ? 'Working…'
               : mode === 'register'
                 ? plan
-                  ? `Create account & subscribe — $${PACK_PRICING[plan].totalWithEngraving.toLocaleString()}`
+                  ? stripeEnabled
+                    ? `Create account & pay with Stripe — $${PACK_PRICING[plan].totalWithEngraving.toLocaleString()}`
+                    : `Create account & subscribe — $${PACK_PRICING[plan].totalWithEngraving.toLocaleString()}`
                   : 'Create account'
                 : plan
-                  ? 'Sign in & subscribe'
+                  ? stripeEnabled
+                    ? 'Sign in & pay with Stripe'
+                    : 'Sign in & subscribe'
                   : 'Sign in'}
           </button>
         </form>
