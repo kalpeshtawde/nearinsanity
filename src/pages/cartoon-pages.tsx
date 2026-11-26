@@ -384,9 +384,13 @@ export function CheckoutPage() {
   const [resolved, setResolved] = useState<Record<string, Resolution>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ orderId: string; credits: number } | null>(
-    null,
-  );
+  const [result, setResult] = useState<{
+    orderId: string;
+    credits: number;
+    count: number;
+    engraving: boolean;
+    url: string;
+  } | null>(null);
   const count = selected.length;
 
   const handleImgError = (cartoon: Cartoon) => {
@@ -399,12 +403,12 @@ export function CheckoutPage() {
         <SectionHeading
           kicker="Checkout"
           title="Order complete."
-          blurb={`${count} cartoon${count === 1 ? '' : 's'} checked out${
-            engraved ? ` with your URL (${url.trim()}) engraved` : ''
+          blurb={`${result.count} cartoon${result.count === 1 ? '' : 's'} checked out${
+            result.engraving ? ` with your URL (${result.url}) engraved` : ''
           }. ${result.credits} credit${result.credits === 1 ? '' : 's'} remaining.`}
         />
         <p className="ni-checkout-order">
-          Order <code>{result.orderId}</code>
+          Order reference <code>{result.orderId}</code>
         </p>
         <div className="ni-auth-actions">
           <a className="ni-btn ni-btn--primary" href="/gallery">
@@ -458,7 +462,13 @@ export function CheckoutPage() {
         engraved,
         url.trim(),
       );
-      setResult(res);
+      // Snapshot the order details before clearing the selection.
+      setResult({
+        ...res,
+        count,
+        engraving: engraved,
+        url: url.trim(),
+      });
       clear();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Checkout failed.');
