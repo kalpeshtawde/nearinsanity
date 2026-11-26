@@ -206,6 +206,20 @@ REST_FRAMEWORK = {
 }
 
 
+# Stripe — price IDs per plan (low → high: 10, 20, 30, 50 packs, then
+# membership). Payments are not wired up yet; these are ready for the
+# checkout-session integration.
+STRIPE_PRICE_IDS = {
+    10: os.environ.get("STRIPE_PRICE_10", ""),
+    20: os.environ.get("STRIPE_PRICE_20", ""),
+    30: os.environ.get("STRIPE_PRICE_30", ""),
+    50: os.environ.get("STRIPE_PRICE_50", ""),
+    "membership": os.environ.get("STRIPE_PRICE_MEMBERSHIP", ""),
+}
+STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
+STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+
+
 # Production hardening (applied when DJANGO_DEBUG=0; the site is served
 # behind nginx with TLS terminated at the edge).
 if not DEBUG:
