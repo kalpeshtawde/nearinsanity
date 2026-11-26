@@ -357,6 +357,44 @@ class StripeApiTests(TestCase):
 
     @override_settings(STRIPE_WEBHOOK_SECRET="whsec_test")
     @patch("gallery.views.stripe.Webhook.construct_event")
+    def test_webhook_handles_stripe_object_events(self, construct):
+        """stripe-python 17 returns StripeObject (no .get) — must convert."""
+
+        class FakeStripeObject:
+            def __init__(self, data):
+                self._data = data
+
+            def to_dict(self):
+                return self._data
+
+        construct.return_value = FakeStripeObject(
+            {
+                "type": "checkout.session.completed",
+                "data": {
+                    "object": {
+                        "id": "cs_test_obj",
+                        "amount_total": 11000,
+                        "payment_status": "paid",
+                        "metadata": {
+                            "plan_size": "10",
+                            "user_id": str(self.user.id),
+                        },
+                    }
+                },
+            }
+        )
+        resp = APIClient().post(
+            reverse("stripe-webhook"),
+            data=b"{}",
+            content_type="application/json",
+            HTTP_STRIPE_SIGNATURE="sig",
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.user.credit_account.refresh_from_db()
+        self.assertEqual(self.user.credit_account.balance, 110)
+
+    @override_settings(STRIPE_WEBHOOK_SECRET="whsec_test")
+    @patch("gallery.views.stripe.Webhook.construct_event")
     def test_webhook_grants_credits_once(self, construct):
         construct.return_value = {
             "type": "checkout.session.completed",

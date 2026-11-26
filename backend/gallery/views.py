@@ -316,14 +316,18 @@ class StripeWebhookView(APIView):
 
         signature = request.headers.get("Stripe-Signature", "")
         try:
-            event = stripe.Webhook.construct_event(
+            raw_event = stripe.Webhook.construct_event(
                 request.body, signature, settings.STRIPE_WEBHOOK_SECRET
             )
         except (ValueError, stripe.SignatureVerificationError):
             return Response({"detail": "Invalid Stripe signature."}, status=400)
 
+        # stripe-python 17 returns StripeObject instances; convert to plain
+        # dicts so the handler can use .get() safely.
+        event = raw_event.to_dict() if hasattr(raw_event, "to_dict") else raw_event
+
         # Fulfil on completed or async-paid sessions, gated on payment_status.
-        if event["type"] in (
+        if event.get("type") in (
             "checkout.session.completed",
             "checkout.session.async_payment_succeeded",
         ):
