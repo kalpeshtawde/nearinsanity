@@ -426,9 +426,11 @@ export function CheckoutPage() {
           title="Your selection is empty."
           blurb="Pick cartoons from the gallery first — the base plan starts at 10."
         />
-        <a className="ni-btn ni-btn--primary" href="/gallery">
-          Browse the gallery <span aria-hidden="true">→</span>
-        </a>
+        <div className="ni-auth-actions">
+          <a className="ni-btn ni-btn--primary" href="/gallery">
+            Browse the gallery <span aria-hidden="true">→</span>
+          </a>
+        </div>
       </section>
     );
   }
