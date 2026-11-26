@@ -1080,10 +1080,9 @@ export function SigninPage() {
           <div className="ni-auth-card">
             <h3>Subscribe to the {plan}-Cartoon Pack</h3>
             <p>
-              Add {PACK_PRICING[plan].credits.toLocaleString()} credits to your
-              account for $
-              {PACK_PRICING[plan].totalWithEngraving.toLocaleString()} (payment
-              simulated).
+              {stripeEnabled
+                ? `Pay $${PACK_PRICING[plan].totalWithEngraving.toLocaleString()} with Stripe to add ${PACK_PRICING[plan].credits.toLocaleString()} credits to your account.`
+                : `Add ${PACK_PRICING[plan].credits.toLocaleString()} credits to your account for $${PACK_PRICING[plan].totalWithEngraving.toLocaleString()} (payment simulated).`}
             </p>
             {error && <p className="ni-auth-error">{error}</p>}
             <button
@@ -1120,7 +1119,7 @@ export function SigninPage() {
         title={plan ? `Get the ${plan}-Cartoon Pack.` : 'Sign in.'}
         blurb={
           plan
-            ? `Create an account or sign in to receive ${PACK_PRICING[plan].credits.toLocaleString()} credits for $${PACK_PRICING[plan].totalWithEngraving.toLocaleString()} (payment simulated).`
+            ? `Create an account or sign in to receive ${PACK_PRICING[plan].credits.toLocaleString()} credits for $${PACK_PRICING[plan].totalWithEngraving.toLocaleString()}${stripeEnabled ? '.' : ' (payment simulated).'}`
             : 'Sign in to use your credits and check out cartoons.'
         }
       />
