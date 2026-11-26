@@ -66,13 +66,14 @@ def plan_for_count(count: int) -> int:
     return max(PLANS)
 
 
-def checkout_cost(count: int, engraving: bool, tier: int | None = None) -> tuple[int, int]:
+def checkout_cost(count: int, engraving: bool) -> tuple[int, int]:
     """Cost in credits for `count` images, and the plan tier that applies.
 
-    The URL rate follows the plan the credits came from (`tier`); if no tier
-    is known, fall back to the smallest plan covering the selection.
+    The tier follows the selection size (1-10 -> 10-pack, 11-20 -> 20-pack,
+    ...), so 1 engraved image costs $11 and 2 cost $22 regardless of which
+    plan the credits came from. Credits are dollars.
     """
-    plan_size = tier if tier in PLANS else plan_for_count(count)
+    plan_size = plan_for_count(count)
     rate = PLANS[plan_size]["engraving_per_cartoon"]
     per_image = PER_CARTOON_PRICE + (rate if engraving else Decimal("0"))
     return int(count * per_image), plan_size

@@ -205,10 +205,10 @@ class AccountCreditApiTests(TestCase):
         self.assertEqual(resp.data["order"]["credits_used"], 22)
         self.assertEqual(resp.data["credits"], 88)
 
-    def test_checkout_uses_subscribed_tier_rate(self):
+    def test_checkout_prices_by_selection_size_not_purchased_plan(self):
         token = self.register().data["token"]
         self.auth(token)
-        # 20-pack: $420 -> 420 credits; URL rate is $20/cartoon.
+        # Buying a 20-pack must not change the per-image rate for a 2-image order.
         sub = self.client.post(reverse("subscribe"), {"plan_size": 20}, format="json")
         self.assertEqual(sub.data["credits"], 420)
 
@@ -222,9 +222,20 @@ class AccountCreditApiTests(TestCase):
             format="json",
         )
         self.assertEqual(resp.status_code, 201)
-        # 2 x ($1 + $20) = $42 = 42 credits.
-        self.assertEqual(resp.data["order"]["credits_used"], 42)
-        self.assertEqual(resp.data["credits"], 378)
+        # 2 images -> 10-pack tier: 2 x ($1 + $10) = $22 = 22 credits.
+        self.assertEqual(resp.data["order"]["credits_used"], 22)
+        self.assertEqual(resp.data["credits"], 398)
+
+    def test_checkout_cost_follows_selection_tiers(self):
+        from .plans import checkout_cost
+
+        self.assertEqual(checkout_cost(1, True), (11, 10))
+        self.assertEqual(checkout_cost(2, True), (22, 10))
+        self.assertEqual(checkout_cost(10, True), (110, 10))
+        self.assertEqual(checkout_cost(11, True), (231, 20))
+        self.assertEqual(checkout_cost(21, True), (651, 30))
+        self.assertEqual(checkout_cost(31, True), (1581, 50))
+        self.assertEqual(checkout_cost(11, False), (11, 20))
 
     def test_checkout_requires_url_when_engraving(self):
         token = self.register().data["token"]

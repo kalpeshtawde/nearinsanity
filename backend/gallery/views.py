@@ -189,7 +189,7 @@ class CheckoutView(APIView):
             account, _ = CreditAccount.objects.select_for_update().get_or_create(
                 user=request.user
             )
-            cost, _plan_size = checkout_cost(count, engraving, account.tier)
+            cost, _plan_size = checkout_cost(count, engraving)
             if account.balance < cost:
                 return Response(
                     {

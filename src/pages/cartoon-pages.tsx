@@ -435,9 +435,10 @@ export function CheckoutPage() {
     );
   }
 
-  // The URL rate follows the plan the credits came from; logged-out users
-  // see a preview at the smallest plan covering the selection.
-  const plan = account?.tier ?? planForCount(count);
+  // Pricing follows the selection size (credits are dollars), not the plan
+  // the credits were bought with: 1 image -> 10-pack tier -> $11 engraved.
+  const plan = planForCount(count);
+  const elevated = plan > PACKS[0].size;
 
   // $1 per selected cartoon; engraving adds the tier rate per cartoon.
   // Credits are dollars, so the dollar total is also the credit cost.
@@ -473,9 +474,9 @@ export function CheckoutPage() {
         kicker="Checkout"
         title="Review your selection."
         blurb={
-          account
-            ? `${count} cartoon${count === 1 ? '' : 's'} selected — you're on the ${plan}-Cartoon Pack.`
-            : `${count} cartoon${count === 1 ? '' : 's'} selected — sign in to check out with credits.`
+          elevated
+            ? `${count} cartoons selected — elevated to the ${plan}-Cartoon Pack rate.`
+            : `${count} cartoon${count === 1 ? '' : 's'} selected — ${plan}-Cartoon Pack rate.`
         }
       />
 
@@ -638,13 +639,15 @@ export function CheckoutPage() {
         </aside>
       </div>
 
-      <button
-        type="button"
-        className="ni-btn ni-checkout__clear"
-        onClick={clear}
-      >
-        Clear all selections
-      </button>
+      <div className="ni-auth-actions">
+        <button
+          type="button"
+          className="ni-btn ni-checkout__clear"
+          onClick={clear}
+        >
+          Clear all selections
+        </button>
+      </div>
     </section>
   );
 }

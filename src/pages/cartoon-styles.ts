@@ -1384,6 +1384,13 @@ export const NI_CSS = `
   margin-top: 26px;
 }
 
+/* Disabled primary actions read as unavailable. */
+.ni-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
 /* Engraving question inside the checkout summary */
 .ni-checkout-engrave {
   margin: 4px 0 16px;
