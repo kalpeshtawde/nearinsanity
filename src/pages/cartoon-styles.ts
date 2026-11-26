@@ -1459,45 +1459,15 @@ export const NI_CSS = `
   color: var(--ni-ink-soft);
 }
 
-.ni-pricing-card__sub {
-  margin: 0;
-  font-size: 0.85rem;
+.ni-pricing-card__addon {
+  margin: 0 0 16px;
+  font-size: 0.9rem;
   font-weight: 600;
   color: var(--ni-ink-soft);
 }
 
-.ni-pricing-card__rows {
-  margin: 8px 0 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.ni-pricing-card__rows > div {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 0.92rem;
-}
-
-.ni-pricing-card__rows dt {
-  color: var(--ni-ink-soft);
-}
-
-.ni-pricing-card__rows dd {
-  margin: 0;
-  font-weight: 700;
-}
-
-.ni-pricing-card__total {
-  border-top: 2px solid var(--ni-line);
-  padding-top: 8px;
-}
-
-.ni-pricing-card__total dt,
-.ni-pricing-card__total dd {
-  font-weight: 900;
-  color: var(--ni-ink);
+.ni-pricing-card__addon strong {
+  color: var(--ni-red);
 }
 
 .ni-pricing-card__cta {

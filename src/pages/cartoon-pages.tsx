@@ -10,7 +10,6 @@ import {
   PACK_PRICING,
   PACKS,
   PER_CARTOON_PRICE,
-  RETAIL_PER_CARTOON,
   advanceResolution,
   isMissing,
   planForCount,
@@ -536,10 +535,10 @@ export function CheckoutPage() {
           )}
 
           <div className="ni-checkout-engrave">
-            <h4>Add engraving?</h4>
+            <h4>Add your website URL?</h4>
             <p>
-              Put your website address on every cartoon — $
-              {pricing.engravingPerCartoon} per cartoon at this tier.
+              Prints your address on every cartoon — $
+              {pricing.engravingPerCartoon} per cartoon.
             </p>
             <div
               className="ni-mode-toggle"
@@ -553,7 +552,7 @@ export function CheckoutPage() {
                 className={engraved ? 'is-selected' : ''}
                 onClick={() => setEngraved(true)}
               >
-                Yes, engrave my URL
+                Yes, add my URL
               </button>
               <button
                 type="button"
@@ -562,7 +561,7 @@ export function CheckoutPage() {
                 className={!engraved ? 'is-selected' : ''}
                 onClick={() => setEngraved(false)}
               >
-                No engraving
+                No thanks
               </button>
             </div>
           </div>
@@ -570,15 +569,13 @@ export function CheckoutPage() {
           <dl className="ni-checkout-summary__rows">
             <div>
               <dt>
-                {count} cartoon{count === 1 ? '' : 's'} × ${PER_CARTOON_PRICE}
+                {count} cartoon{count === 1 ? '' : 's'}
               </dt>
               <dd>${cartoonsTotal.toLocaleString()}</dd>
             </div>
             {engraved && (
               <div>
-                <dt>
-                  Engraving — {count} × ${pricing.engravingPerCartoon}
-                </dt>
+                <dt>Add your URL</dt>
                 <dd>${engravingTotal.toLocaleString()}</dd>
               </div>
             )}
@@ -776,7 +773,7 @@ function OfferCard({ activeKey }: { activeKey: string }) {
               className={engraved ? 'is-selected' : ''}
               onClick={() => setEngraved(true)}
             >
-              With engraving
+              With your URL
             </button>
             <button
               type="button"
@@ -785,21 +782,19 @@ function OfferCard({ activeKey }: { activeKey: string }) {
               className={!engraved ? 'is-selected' : ''}
               onClick={() => setEngraved(false)}
             >
-              No engraving
+              Without URL
             </button>
           </div>
 
           <p className="ni-price-display">${total.toLocaleString()}</p>
           <p className="ni-price-sub">
             {engraved
-              ? `Includes $${pricing.basePrice} for ${pricing.size} cartoons + $${pricing.engravingFee.toLocaleString()} engraving ($${pricing.engravingPerCartoon}/cartoon)`
-              : `$${PER_CARTOON_PRICE} per cartoon · Standard shared catalog without engraving`}
+              ? `$${pricing.basePrice} for ${pricing.size} cartoons + $${pricing.engravingFee.toLocaleString()} to add your URL`
+              : `$${pricing.basePrice} for ${pricing.size} cartoons`}
           </p>
 
           <a className="ni-btn ni-btn--primary ni-offer-card__cta" href={offer.href}>
-            {engraved
-              ? `Get ${offer.size}-Pack with engraving — $${pricing.totalWithEngraving.toLocaleString()}`
-              : `Get ${offer.size}-Pack — $${pricing.basePrice}`}{' '}
+            Get {offer.size}-Pack — ${total.toLocaleString()}{' '}
             <span aria-hidden="true">→</span>
           </a>
         </div>
@@ -908,7 +903,7 @@ export function PricingPage() {
       <SectionHeading
         kicker="Pricing"
         title="Simple pricing."
-        blurb={`Cartoons are $${PER_CARTOON_PRICE} each in every funnel pack (full price $${RETAIL_PER_CARTOON}). Adding your URL is optional and priced per cartoon by tier — $10 at the 10-pack, $20 at 20, $30 at 30, $50 at 50.`}
+        blurb={`Every cartoon is $${PER_CARTOON_PRICE}. Want your website printed on the artwork? Add your URL for an extra fee — totals below.`}
       />
       <div className="ni-pricing">
         {OFFERS.filter((o) => o.size != null).map((o) => {
@@ -918,35 +913,24 @@ export function PricingPage() {
               <span className="ni-funnel-badge">{o.vanityDomain}</span>
               <h3 className="ni-pricing-card__name">{o.offerName}</h3>
               <p className="ni-pricing-card__blurb">{o.blurb}</p>
+
               <p className="ni-pricing-card__price">
                 ${pricing.basePrice.toLocaleString()}
-                <span> / {pricing.size} cartoons</span>
+                <span> for {pricing.size} cartoons</span>
               </p>
-              <p className="ni-pricing-card__sub">
-                ${PER_CARTOON_PRICE} per cartoon
+              <p className="ni-pricing-card__addon">
+                +${pricing.engravingFee.toLocaleString()} to add your URL
+                <br />
+                <strong>
+                  ${pricing.totalWithEngraving.toLocaleString()} with your URL
+                </strong>
               </p>
-              <dl className="ni-pricing-card__rows">
-                <div>
-                  <dt>Without engraving</dt>
-                  <dd>${pricing.basePrice.toLocaleString()}</dd>
-                </div>
-                <div>
-                  <dt>
-                    Engraving add-on (${pricing.engravingPerCartoon}/cartoon)
-                  </dt>
-                  <dd>${pricing.engravingFee.toLocaleString()}</dd>
-                </div>
-                <div className="ni-pricing-card__total">
-                  <dt>With engraving</dt>
-                  <dd>${pricing.totalWithEngraving.toLocaleString()}</dd>
-                </div>
-              </dl>
+
               <a
                 className="ni-btn ni-btn--primary ni-pricing-card__cta"
                 href={`/signin?plan=${o.size}`}
               >
-                Subscribe — +{o.size} credits{' '}
-                <span aria-hidden="true">→</span>
+                Choose this pack <span aria-hidden="true">→</span>
               </a>
             </article>
           );
@@ -960,19 +944,9 @@ export function PricingPage() {
               ${membership.monthlyPrice}
               <span> / month</span>
             </p>
-            <p className="ni-pricing-card__sub">
-              Ongoing access to the catalog
+            <p className="ni-pricing-card__addon">
+              Or upgrade to lifetime / unlimited.
             </p>
-            <dl className="ni-pricing-card__rows">
-              <div>
-                <dt>Billed</dt>
-                <dd>Monthly</dd>
-              </div>
-              <div className="ni-pricing-card__total">
-                <dt>Price</dt>
-                <dd>${membership.monthlyPrice}/mo</dd>
-              </div>
-            </dl>
             <a
               className="ni-btn ni-btn--primary ni-pricing-card__cta"
               href={membership.href}
@@ -983,10 +957,8 @@ export function PricingPage() {
         )}
       </div>
       <p className="ni-gallery-note">
-        Engraving prints your website address on the artwork&rsquo;s plaque —
-        priced per cartoon by tier ($10 / $20 / $30 / $50 at the 10 / 20 / 30 /
-        50 packs). Without engraving, every cartoon is ${PER_CARTOON_PRICE};
-        full retail is ${RETAIL_PER_CARTOON} each.
+        Prices in USD. Adding your URL prints your website address on every
+        cartoon&rsquo;s plaque.
       </p>
     </section>
   );
