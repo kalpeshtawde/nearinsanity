@@ -1406,6 +1406,30 @@ export const NI_CSS = `
   color: var(--ni-ink-soft);
 }
 
+.ni-checkout-url {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+.ni-checkout-url input {
+  font: inherit;
+  font-weight: 500;
+  padding: 9px 12px;
+  border: 2px solid var(--ni-ink);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ni-ink);
+}
+
+.ni-checkout-url input:focus-visible {
+  outline: 3px solid var(--ni-yellow);
+  outline-offset: 1px;
+}
+
 /* Pricing page */
 .ni-pricing {
   display: grid;

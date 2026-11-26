@@ -34,7 +34,11 @@ interface AuthContextValue {
   /** Buy a funnel plan; returns the new credit balance. */
   subscribe: (planSize: number) => Promise<number>;
   /** Spend credits on the selected images. */
-  checkout: (imageIds: string[], engraving: boolean) => Promise<CheckoutResult>;
+  checkout: (
+    imageIds: string[],
+    engraving: boolean,
+    url?: string,
+  ) => Promise<CheckoutResult>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -153,13 +157,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const checkout = useCallback(
-    async (imageIds: string[], engraving: boolean) => {
+    async (imageIds: string[], engraving: boolean, url?: string) => {
       const res = await api<{ order: { id: string }; credits: number }>(
         '/api/v1/checkout/',
         {
           method: 'POST',
           token,
-          body: { image_ids: imageIds, engraving },
+          body: {
+            image_ids: imageIds,
+            engraving,
+            url: engraving ? url ?? '' : '',
+          },
         },
       );
       setAccount((prev) => (prev ? { ...prev, credits: res.credits } : prev));

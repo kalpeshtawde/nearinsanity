@@ -380,6 +380,7 @@ export function CheckoutPage() {
   const { selected, remove, clear } = useSelection();
   const { account, checkout } = useAuth();
   const [engraved, setEngraved] = useState(true);
+  const [url, setUrl] = useState('');
   const [resolved, setResolved] = useState<Record<string, Resolution>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -399,7 +400,7 @@ export function CheckoutPage() {
           kicker="Checkout"
           title="Order complete."
           blurb={`${count} cartoon${count === 1 ? '' : 's'} checked out${
-            engraved ? ' with engraving' : ''
+            engraved ? ` with your URL (${url.trim()}) engraved` : ''
           }. ${result.credits} credit${result.credits === 1 ? '' : 's'} remaining.`}
         />
         <p className="ni-checkout-order">
@@ -444,6 +445,7 @@ export function CheckoutPage() {
   const total = engraved ? cartoonsTotal + engravingTotal : cartoonsTotal;
   const credits = account?.credits ?? 0;
   const enough = account !== null && credits >= total;
+  const urlMissing = engraved && !url.trim();
 
   const complete = async () => {
     setError(null);
@@ -452,6 +454,7 @@ export function CheckoutPage() {
       const res = await checkout(
         selected.map((c) => c.id),
         engraved,
+        url.trim(),
       );
       setResult(res);
       clear();
@@ -552,6 +555,19 @@ export function CheckoutPage() {
                 No thanks
               </button>
             </div>
+            {engraved && (
+              <label className="ni-checkout-url">
+                Your website URL
+                <input
+                  type="text"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder="yourbusiness.com"
+                  autoComplete="url"
+                  required
+                />
+              </label>
+            )}
           </div>
 
           <dl className="ni-checkout-summary__rows">
@@ -583,16 +599,23 @@ export function CheckoutPage() {
               Sign in to check out <span aria-hidden="true">→</span>
             </a>
           ) : enough ? (
-            <button
-              type="button"
-              className="ni-btn ni-btn--primary ni-checkout-summary__cta"
-              onClick={complete}
-              disabled={busy}
-            >
-              {busy
-                ? 'Checking out…'
-                : `Complete checkout — uses ${total.toLocaleString()} credits`}
-            </button>
+            <>
+              <button
+                type="button"
+                className="ni-btn ni-btn--primary ni-checkout-summary__cta"
+                onClick={complete}
+                disabled={busy || urlMissing}
+              >
+                {busy
+                  ? 'Checking out…'
+                  : `Complete checkout — uses ${total.toLocaleString()} credits`}
+              </button>
+              {urlMissing && (
+                <p className="ni-auth-error">
+                  Enter the website URL to engrave.
+                </p>
+              )}
+            </>
           ) : (
             <>
               <p className="ni-auth-error">

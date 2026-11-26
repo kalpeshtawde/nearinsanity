@@ -172,10 +172,12 @@ class AccountCreditApiTests(TestCase):
             {
                 "image_ids": [str(img.id) for img in self.images],
                 "engraving": True,
+                "url": "acme.com",
             },
             format="json",
         )
         self.assertEqual(resp.status_code, 201)
+        self.assertEqual(resp.data["order"]["engraved_url"], "acme.com")
         # 3 images at the 10-pack tier: 3 x ($1 + $10) = $33 = 33 credits.
         self.assertEqual(resp.data["credits"], 110 - 33)
         self.assertEqual(resp.data["order"]["credits_used"], 33)
@@ -193,6 +195,7 @@ class AccountCreditApiTests(TestCase):
             {
                 "image_ids": [str(img.id) for img in self.images[:2]],
                 "engraving": True,
+                "url": "acme.com",
             },
             format="json",
         )
@@ -212,6 +215,7 @@ class AccountCreditApiTests(TestCase):
             {
                 "image_ids": [str(img.id) for img in self.images[:2]],
                 "engraving": True,
+                "url": "acme.com",
             },
             format="json",
         )
@@ -219,6 +223,22 @@ class AccountCreditApiTests(TestCase):
         # 2 x ($1 + $20) = $42 = 42 credits.
         self.assertEqual(resp.data["order"]["credits_used"], 42)
         self.assertEqual(resp.data["credits"], 378)
+
+    def test_checkout_requires_url_when_engraving(self):
+        token = self.register().data["token"]
+        self.auth(token)
+        self.client.post(reverse("subscribe"), {"plan_size": 10}, format="json")
+
+        resp = self.client.post(
+            reverse("checkout"),
+            {
+                "image_ids": [str(img.id) for img in self.images[:2]],
+                "engraving": True,
+            },
+            format="json",
+        )
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn("url", resp.data)
 
     def test_checkout_plain_images_cost_one_credit_each(self):
         token = self.register().data["token"]

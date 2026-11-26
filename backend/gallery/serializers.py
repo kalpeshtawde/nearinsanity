@@ -132,12 +132,30 @@ class CheckoutSerializer(serializers.Serializer):
         child=serializers.UUIDField(), min_length=1, max_length=50
     )
     engraving = serializers.BooleanField(default=False)
+    url = serializers.CharField(
+        max_length=255, required=False, allow_blank=True, default=""
+    )
 
     def validate_image_ids(self, value):
         unique = list(dict.fromkeys(value))
         if len(unique) != len(value):
             raise serializers.ValidationError("Duplicate images in the selection.")
         return value
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        url = (attrs.get("url") or "").strip()
+        if attrs.get("engraving"):
+            if not url:
+                raise serializers.ValidationError(
+                    {"url": "Enter the website URL to engrave."}
+                )
+            if len(url) > 255:
+                raise serializers.ValidationError(
+                    {"url": "The URL is too long (max 255 characters)."}
+                )
+        attrs["url"] = url
+        return attrs
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
@@ -158,6 +176,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "id",
             "image_count",
             "engraving",
+            "engraved_url",
             "credits_used",
             "amount",
             "created_at",

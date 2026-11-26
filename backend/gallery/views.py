@@ -173,6 +173,7 @@ class CheckoutView(APIView):
         serializer.is_valid(raise_exception=True)
         image_ids = serializer.validated_data["image_ids"]
         engraving = serializer.validated_data["engraving"]
+        engraved_url = serializer.validated_data["url"]
 
         images = list(
             GalleryImage.objects.filter(id__in=image_ids, is_published=True)
@@ -203,6 +204,7 @@ class CheckoutView(APIView):
                 user=request.user,
                 image_count=count,
                 engraving=engraving,
+                engraved_url=engraved_url,
                 credits_used=cost,
                 amount=cost,
             )
