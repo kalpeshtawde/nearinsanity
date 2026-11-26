@@ -172,6 +172,14 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5178",
 ]
 
+# Dev convenience: allow any localhost/127.0.0.1 port (preview proxies, other
+# dev hosts). Tightened to explicit origins in production.
+if DEBUG:
+    CORS_ALLOWED_ORIGIN_REGEXES = [
+        r"^http://localhost(:\d+)?$",
+        r"^http://127\.0\.0\.1(:\d+)?$",
+    ]
+
 
 # Django REST Framework
 # https://www.django-rest-framework.org/api-guide/settings/
