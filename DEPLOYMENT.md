@@ -42,9 +42,49 @@ SQL
 ```bash
 cd /root/src/nearinsanity
 cp backend/.env.production.example backend/.env
-# edit backend/.env — set DJANGO_SECRET_KEY (long random), DJANGO_DEBUG=0,
-# DJANGO_ALLOWED_HOSTS, and the DB_* values above (DB_PORT=5432).
+# edit backend/.env — set:
+#   DJANGO_SECRET_KEY (long random), DJANGO_DEBUG=0
+#   DJANGO_ALLOWED_HOSTS=nearinsanity.com,www.nearinsanity.com
+#   FRONTEND_ORIGIN=https://nearinsanity.com
+#   FRONTEND_URL=https://nearinsanity.com
+#   DB_* values above (DB_PORT=5432)
+#   Stripe: STRIPE_PRICE_10/20/30/50/MEMBERSHIP, STRIPE_SECRET_KEY,
+#           STRIPE_WEBHOOK_SECRET (see the Stripe section below)
 ```
+
+### 2b. Stripe (live mode)
+
+The price IDs used in local dev are **test-mode** objects. For production you
+must create the same products in **live mode** (Dashboard with test mode off)
+and copy the live `price_...` IDs:
+
+| Plan | Price |
+| --- | --- |
+| 10-Cartoon Starter Pack | $110 one-time |
+| 20-Cartoon Growth Pack | $420 one-time |
+| 30-Cartoon Pro Pack | $930 one-time |
+| 50-Cartoon Agency Pack | $2,550 one-time |
+| All-Access Membership | $25/month recurring |
+
+Then:
+
+1. Add the **live secret key** (`sk_live_...`, or preferably a restricted key
+   `rk_live_...` scoped to Checkout + Webhooks) as `STRIPE_SECRET_KEY`.
+2. In the Stripe Dashboard → Developers → Webhooks → **Add endpoint**:
+   - URL: `https://nearinsanity.com/api/v1/stripe/webhook/`
+   - Events: `checkout.session.completed`,
+     `checkout.session.async_payment_succeeded`
+3. Copy the endpoint's signing secret (`whsec_...`) into
+   `STRIPE_WEBHOOK_SECRET`.
+4. Restart the backend and confirm:
+   ```bash
+   docker-compose -f docker-compose.prod.yml restart backend
+   curl -s https://nearinsanity.com/api/v1/config/   # {"stripe_enabled":true}
+   ```
+
+> Tip: to smoke-test the flow before going live, temporarily keep the test
+> keys and price IDs on the server, complete a purchase with card
+> `4242 4242 4242 4242`, then swap in the live values.
 
 ### 3. Build, migrate, create admin
 
