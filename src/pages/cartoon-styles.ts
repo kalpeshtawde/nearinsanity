@@ -5,7 +5,17 @@
  */
 
 export const NI_CSS = `
+.ni-root,
+.ni-root *,
+.ni-root *::before,
+.ni-root *::after {
+  box-sizing: border-box;
+}
+
 .ni-root {
+  /* Guard against horizontal scroll from the tilted hero frame. Using clip
+     (unlike hidden) does not create a scroll container, so sticky still works. */
+  overflow-x: clip;
   --ni-paper: #F6EFDF;
   --ni-paper-light: #FCF7EA;
   --ni-paper-deep: #EEE1C4;
@@ -96,7 +106,22 @@ export const NI_CSS = `
 
 @media (max-width: 640px) {
   .ni-logo {
-    height: 56px;
+    height: 44px;
+  }
+  .ni-header__inner {
+    padding: 8px 14px;
+    gap: 8px;
+  }
+  .ni-nav {
+    gap: 4px;
+  }
+  .ni-nav a,
+  .ni-nav button {
+    padding: 7px 10px;
+    font-size: 0.86rem;
+  }
+  .ni-nav button.ni-nav-cta {
+    padding: 7px 12px;
   }
 }
 
@@ -296,7 +321,7 @@ export const NI_CSS = `
   align-items: center;
 }
 
-@media (min-width: 920px) {
+@media (min-width: 1120px) {
   .ni-hero {
     grid-template-columns: 1.02fr 1fr;
     gap: 64px;
@@ -330,10 +355,89 @@ export const NI_CSS = `
   flex-wrap: wrap;
 }
 
+/* Longer sales headline: smaller scale, wraps naturally, still fits mobile. */
+.ni-hero__title--long {
+  font-size: clamp(1.75rem, 4.2vw, 3.4rem);
+  line-height: 1.1;
+}
+
+/* ---------------- Sales letter ---------------- */
+
+.ni-letter {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.ni-letter h2 {
+  font-family: var(--ni-font-display);
+  font-weight: 900;
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin: 46px 0 14px;
+}
+
+.ni-letter h2:first-child {
+  margin-top: 0;
+}
+
+.ni-letter p {
+  margin: 0 0 16px;
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+
+.ni-letter__list {
+  margin: 0 0 18px;
+  padding-left: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 1.03rem;
+  line-height: 1.6;
+}
+
+.ni-letter__list li::marker {
+  color: var(--ni-red);
+}
+
+.ni-letter__cta {
+  margin: 26px 0 10px;
+}
+
+.ni-letter__fineprint {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ni-ink-soft);
+}
+
+/* Anchor targets: keep the pack heading clear of the sticky header.
+   --ni-header-h is measured at runtime (it wraps on small screens). */
+#ni-offers,
+#starter-pack {
+  scroll-margin-top: calc(var(--ni-header-h, 90px) + 16px);
+}
+
+.ni-anchor {
+  display: block;
+  height: 0;
+  overflow: hidden;
+}
+
+/* On phones, drop the decorative collage so the pack heading and price
+   are both visible after jumping to the starter pack. */
+@media (max-width: 640px) {
+  .ni-offer-card__top .ni-showcase {
+    display: none;
+  }
+}
+
 .ni-hero__art-col {
   justify-self: center;
   width: 100%;
   max-width: 560px;
+  /* Room for the -1.5deg tilt and the offset shadow on narrow screens. */
+  padding: 10px 14px;
 }
 
 /* ---------------- Cartoon cards ---------------- */
@@ -729,7 +833,7 @@ export const NI_CSS = `
   margin: 0 auto;
 }
 
-@media (min-width: 900px) {
+@media (min-width: 1100px) {
   .ni-offer-layout {
     grid-template-columns: 72fr 28fr;
     align-items: stretch;
@@ -747,7 +851,9 @@ export const NI_CSS = `
   position: relative;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 3px;
+  min-height: 56px;
   border-radius: 14px;
   border: 1px solid var(--ni-ink);
   padding: 12px 14px;
@@ -930,14 +1036,16 @@ export const NI_CSS = `
 
 .ni-mode-toggle button {
   font-family: var(--ni-font-body);
-  font-size: 0.88rem;
+  font-size: 0.92rem;
   font-weight: 700;
   color: var(--ni-ink-soft);
   background: transparent;
   border: 0;
   border-radius: 8px;
-  padding: 10px 8px;
+  padding: 12px 10px;
+  min-height: 44px;
   line-height: 1.2;
+  cursor: pointer;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 

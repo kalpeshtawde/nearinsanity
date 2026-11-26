@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { NI_CSS } from './cartoon-styles';
 import {
   CheckoutPage,
@@ -266,6 +266,29 @@ function renderPage(route: string) {
 }
 
 export function CartoonPreview({ route }: { route: string }) {
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  // Measure the sticky header (it wraps on small screens) and expose its
+  // height so in-page anchor jumps clear it.
+  useEffect(() => {
+    const root = rootRef.current;
+    const header = root?.querySelector<HTMLElement>('.ni-header');
+    if (!root || !header) return;
+    const update = () =>
+      root.style.setProperty(
+        '--ni-header-h',
+        `${Math.ceil(header.getBoundingClientRect().height)}px`,
+      );
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(header);
+    window.addEventListener('resize', update);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', update);
+    };
+  }, []);
+
   // Scoped typography: load the preview fonts only while this route is shown.
   useEffect(() => {
     const id = 'ni-fonts';
@@ -304,7 +327,7 @@ export function CartoonPreview({ route }: { route: string }) {
   return (
     <AuthProvider>
       <SelectionProvider>
-        <div className="ni-root">
+        <div className="ni-root" ref={rootRef}>
           <style>{NI_CSS}</style>
           <Header route={route} />
           <StripeReturnBanner />

@@ -10,6 +10,7 @@ import {
   PACK_PRICING,
   PACKS,
   PER_CARTOON_PRICE,
+  THANKSGIVING_CARTOON,
   advanceResolution,
   isMissing,
   planForCount,
@@ -854,6 +855,9 @@ function OtherOffersStrip({ activeKey }: { activeKey: string }) {
 export function OfferSection({ activeKey, id }: { activeKey: string; id?: string }) {
   return (
     <section className="ni-section ni-section--packs" id={id}>
+      {/* Anchor used by the hero link and the sales-letter CTA. Sits at the
+          card top so the sticky header does not hide the pack heading. */}
+      <span id="starter-pack" className="ni-anchor" aria-hidden="true" />
       <div className="ni-offer-layout">
         <OfferCard activeKey={activeKey} />
         <OfferRail activeKey={activeKey} />
@@ -1237,27 +1241,128 @@ export function EngraveSection() {
 }
 
 /* ------------------------------------------------------------------ */
+/* Sales letter (Bob Johnson's copy)                                   */
+/* ------------------------------------------------------------------ */
+
+export function SalesLetterSection() {
+  return (
+    <section className="ni-section ni-sales-letter">
+      <div className="ni-letter">
+        <h2>The Problem: Nobody Stops for Another Polished Ad</h2>
+        <p>
+          Your prospects scroll past hundreds of stock photos, generic AI
+          graphics, and corporate sales pitches every single day. Their brains
+          are trained to filter out anything that looks like an ad.
+        </p>
+        <p>
+          If you are trying to buy attention with paid clicks or blend in with
+          &ldquo;pretty&rdquo; branding visuals, you are paying top dollar just
+          to be ignored.
+        </p>
+
+        <h2>
+          The Shift: You Don&rsquo;t Sell Cartoons
+          <br />
+          You Deploy Attention Traps
+        </h2>
+        <p>Most people think of cartoons as mere entertainment or decoration</p>
+        <p>Smart business owners use them as commercial leverage.</p>
+        <p>
+          When a single-panel absurd cartoon pops up in a prospect&rsquo;s
+          feed, inbox, or timeline, two things happen instantly:
+        </p>
+        <ul className="ni-letter__list">
+          <li>
+            <strong>The Pattern Interrupt:</strong> Humor and absurdity bypass
+            ad blindness. People stop scrolling, read the panel, and feel an
+            immediate reward.
+          </li>
+          <li>
+            <strong>The Ubiquity Effect:</strong> Because these cartoons are
+            shareable, embeddable, and built to spread across social media,
+            blogs, emails, and forums, your brand message travels everywhere
+            online—doing the heavy lifting of prospecting while you focus on
+            running your business.
+          </li>
+        </ul>
+
+        <h2>What You Get Inside This Digital System</h2>
+        <ul className="ni-letter__list">
+          <li>
+            <strong>The Traffic-First Cartoon Method:</strong> A step-by-step
+            blueprint showing you exactly how to position, caption, and deploy
+            single-panel absurd cartoons so prospects immediately connect the
+            laugh to what your business does for them right now.
+          </li>
+          <li>
+            <strong>The Ready-to-Deploy Cartoon Tool &amp; Vault:</strong>{' '}
+            Instant access to a curated arsenal of high-converting single-panel
+            absurd cartoons engineered for business visibility—no drawing,
+            hiring illustrators, or creative guesswork required.
+          </li>
+          <li>
+            <strong>Omnipresent Distribution Playbook:</strong> How to
+            syndicate your cartoons across social feeds, email newsletters,
+            landing pages, and niche communities so they generate compounding
+            organic traffic without ongoing ad spend.
+          </li>
+          <li>
+            <strong>Plug-and-Play Call-to-Action Bridges:</strong> Proven
+            transition hooks that turn a quick chuckle into a website click,
+            lead capture, or buyer inquiry without sounding pushy.
+          </li>
+        </ul>
+
+        <h2>Who This Is Built For</h2>
+        <ul className="ni-letter__list">
+          <li>
+            <strong>Small Business Owners &amp; Local Operators</strong> tired
+            of lighting money on fire with underperforming digital ads.
+          </li>
+          <li>
+            <strong>Consultants, Coaches &amp; Service Providers</strong> who
+            need prospects to notice their expertise in a crowded market.
+          </li>
+          <li>
+            <strong>Online Marketers &amp; Solopreneurs</strong> looking for a
+            fast, repeatable way to drive consistent traffic without a massive
+            marketing budget.
+          </li>
+        </ul>
+
+        <h2>Stop Paying a Small Fortune Just to Be Seen</h2>
+        <p>
+          Your buyers are online right now, scrolling fast and ignoring
+          traditional marketing. Give them something they actually want to look
+          at—and watch what happens when your business becomes impossible to
+          scroll past.
+        </p>
+        <p className="ni-letter__cta">
+          <button
+            type="button"
+            className="ni-btn ni-btn--primary"
+            onClick={() => scrollToSection('starter-pack')}
+          >
+            Get Instant Access to the Method &amp; Tool Now
+          </button>
+        </p>
+        <p className="ni-letter__fineprint">
+          Immediate digital download • Zero recurring ad fees • Ready to deploy
+          today
+        </p>
+      </div>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* Homepage                                                            */
 /* ------------------------------------------------------------------ */
 
 export function HomePage() {
   const [resolved, setResolved] = useState<Record<string, Resolution>>({});
-  const [featured, setFeatured] = useState<Cartoon>(CARTOONS[0]);
-
-  // Use the latest published cartoon from the backend when available.
-  useEffect(() => {
-    let alive = true;
-    fetchGalleryCartoons()
-      .then((items) => {
-        if (alive && items.length > 0) setFeatured(items[0]);
-      })
-      .catch(() => {
-        /* API unavailable — static fallback stays in place */
-      });
-    return () => {
-      alive = false;
-    };
-  }, []);
+  // Hero artwork: the framed Thanksgiving cartoon with the engraved plaque.
+  const featured = THANKSGIVING_CARTOON;
 
   const handleImgError = (cartoon: Cartoon) => {
     setResolved((prev) => advanceResolution(prev, cartoon.id));
@@ -1269,17 +1374,22 @@ export function HomePage() {
       <section className="ni-hero">
         <div className="ni-hero__copy">
           <span className="ni-kicker">Syndicated cartoons for marketing</span>
-          <h1 className="ni-hero__title">
-            Cartoons for an <em>absurd</em> world.
+          <h1 className="ni-hero__title ni-hero__title--long">
+            Stop Buying &ldquo;Pretty Pictures.&rdquo; Start Using
+            Pattern-Interrupt Cartoons That Pull Buyers to Your Business 24/7.
           </h1>
           <p className="ni-hero__lead">
-            Bob Johnson&rsquo;s digital cartoons — strange everyday moments and
-            rock-and-roll chaos — ready for your marketing, with your own
-            website address on the artwork.
+            Discover the plug-and-play method and tool that turns single-panel
+            absurd cartoons into relentless, low-cost traffic magnets—showing
+            business owners how to capture distracted prospects everywhere
+            online without burning a small fortune on ads.
           </p>
           <div className="ni-hero__actions">
             <a className="ni-btn ni-btn--primary" href="/gallery">
               Browse Cartoons <span aria-hidden="true">→</span>
+            </a>
+            <a className="ni-btn" href="#starter-pack">
+              See Starter Pack
             </a>
           </div>
         </div>
@@ -1352,6 +1462,9 @@ export function HomePage() {
 
       {/* Engraved samples showcase */}
       <EngraveSection />
+
+      {/* Bob Johnson's sales letter */}
+      <SalesLetterSection />
 
       {/* Unified offer: featured 10-pack + all five funnel offers */}
       <OfferSection activeKey="packs/10" id="ni-offers" />

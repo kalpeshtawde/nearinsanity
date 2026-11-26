@@ -1,5 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
+from rest_framework.authtoken.admin import TokenAdmin
+from rest_framework.authtoken.models import Token
 
 from .models import (
     CreditAccount,
@@ -195,3 +197,6 @@ class OrderAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         return False
+
+
+admin.site.register(Token, TokenAdmin)
