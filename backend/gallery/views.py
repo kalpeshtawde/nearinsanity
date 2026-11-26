@@ -231,6 +231,9 @@ class CheckoutView(APIView):
 # Stripe payments
 # ---------------------------------------------------------------------------
 
+import secrets  # noqa: E402
+import string  # noqa: E402
+
 import stripe  # noqa: E402
 from decimal import Decimal  # noqa: E402
 
@@ -268,21 +271,28 @@ class StripeCheckoutSessionView(APIView):
                 status=400,
             )
 
-        stripe.api_key = settings.STRIPE_SECRET_KEY
+        client = stripe.StripeClient(settings.STRIPE_SECRET_KEY)
+        # Tag the session so checkout flows are identifiable in the Dashboard.
+        identifier = "nearinsanity-" + "".join(
+            secrets.choice(string.ascii_lowercase) for _ in range(8)
+        )
         try:
-            session = stripe.checkout.Session.create(
-                mode="payment",
-                line_items=[{"price": price_id, "quantity": 1}],
-                customer_email=request.user.email or None,
-                client_reference_id=str(request.user.id),
-                metadata={
-                    "plan_size": str(plan_size),
-                    "user_id": str(request.user.id),
-                },
-                success_url=f"{settings.FRONTEND_URL}/checkout?status=success",
-                cancel_url=f"{settings.FRONTEND_URL}/pricing?status=cancelled",
+            session = client.checkout.sessions.create(
+                {
+                    "mode": "payment",
+                    "line_items": [{"price": price_id, "quantity": 1}],
+                    "customer_email": request.user.email or None,
+                    "client_reference_id": str(request.user.id),
+                    "metadata": {
+                        "plan_size": str(plan_size),
+                        "user_id": str(request.user.id),
+                    },
+                    "success_url": f"{settings.FRONTEND_URL}/checkout?status=success",
+                    "cancel_url": f"{settings.FRONTEND_URL}/pricing?status=cancelled",
+                    "integration_identifier": identifier,
+                }
             )
-        except stripe.error.StripeError as exc:
+        except stripe.StripeError as exc:
             return Response({"detail": str(exc)}, status=502)
 
         return Response({"url": session.url, "id": session.id}, status=201)
@@ -309,11 +319,17 @@ class StripeWebhookView(APIView):
             event = stripe.Webhook.construct_event(
                 request.body, signature, settings.STRIPE_WEBHOOK_SECRET
             )
-        except (ValueError, stripe.error.SignatureVerificationError):
+        except (ValueError, stripe.SignatureVerificationError):
             return Response({"detail": "Invalid Stripe signature."}, status=400)
 
-        if event["type"] == "checkout.session.completed":
-            self._grant_credits(event["data"]["object"])
+        # Fulfil on completed or async-paid sessions, gated on payment_status.
+        if event["type"] in (
+            "checkout.session.completed",
+            "checkout.session.async_payment_succeeded",
+        ):
+            session = event["data"]["object"]
+            if session.get("payment_status") == "paid":
+                self._grant_credits(session)
 
         return Response({"received": True})
 

@@ -9,4 +9,4 @@ inflection==0.5.1
 uritemplate==4.2.0
 gunicorn==23.0.0
 whitenoise==6.11.0
-stripe==11.6.1
+stripe==17.1.0

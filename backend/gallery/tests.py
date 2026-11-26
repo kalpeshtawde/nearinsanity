@@ -303,11 +303,13 @@ class StripeApiTests(TestCase):
         self.client = APIClient()
         self.client.force_authenticate(self.user)
 
+    @override_settings(STRIPE_SECRET_KEY="")
     def test_config_reports_stripe_disabled_without_key(self):
         resp = APIClient().get(reverse("config"))
         self.assertEqual(resp.status_code, 200)
         self.assertFalse(resp.data["stripe_enabled"])
 
+    @override_settings(STRIPE_SECRET_KEY="", STRIPE_PRICE_IDS={})
     def test_checkout_session_requires_stripe_config(self):
         resp = self.client.post(
             reverse("stripe-checkout-session"), {"plan_size": 10}, format="json"
@@ -319,20 +321,24 @@ class StripeApiTests(TestCase):
         STRIPE_PRICE_IDS={10: "price_dummy"},
         FRONTEND_URL="http://localhost:5178",
     )
-    @patch("gallery.views.stripe.checkout.Session.create")
-    def test_checkout_session_returns_url(self, create):
-        create.return_value = SimpleNamespace(
-            url="https://checkout.stripe.test/session", id="cs_test_1"
+    @patch("gallery.views.stripe.StripeClient")
+    def test_checkout_session_returns_url(self, client_cls):
+        client_cls.return_value.checkout.sessions.create.return_value = (
+            SimpleNamespace(url="https://checkout.stripe.test/session", id="cs_test_1")
         )
         resp = self.client.post(
             reverse("stripe-checkout-session"), {"plan_size": 10}, format="json"
         )
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(resp.data["url"], "https://checkout.stripe.test/session")
-        kwargs = create.call_args.kwargs
-        self.assertEqual(kwargs["metadata"]["plan_size"], "10")
-        self.assertEqual(kwargs["metadata"]["user_id"], str(self.user.id))
+        params = client_cls.return_value.checkout.sessions.create.call_args.args[0]
+        self.assertEqual(params["metadata"]["plan_size"], "10")
+        self.assertEqual(params["metadata"]["user_id"], str(self.user.id))
+        self.assertEqual(params["line_items"][0]["price"], "price_dummy")
+        self.assertNotIn("payment_method_types", params)
+        self.assertTrue(params["integration_identifier"].startswith("nearinsanity-"))
 
+    @override_settings(STRIPE_WEBHOOK_SECRET="")
     def test_webhook_requires_secret(self):
         resp = APIClient().post(
             reverse("stripe-webhook"), data=b"{}", content_type="application/json"
@@ -358,6 +364,7 @@ class StripeApiTests(TestCase):
                 "object": {
                     "id": "cs_test_abc",
                     "amount_total": 11000,
+                    "payment_status": "paid",
                     "metadata": {
                         "plan_size": "10",
                         "user_id": str(self.user.id),
