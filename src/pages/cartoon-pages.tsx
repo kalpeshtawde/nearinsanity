@@ -436,9 +436,8 @@ export function CheckoutPage() {
   }
 
   // Pricing follows the selection size (credits are dollars), not the plan
-  // the credits were bought with: 1 image -> 10-pack tier -> $11 engraved.
+  // the credits were bought with: 1 image -> $11 engraved.
   const plan = planForCount(count);
-  const elevated = plan > PACKS[0].size;
 
   // $1 per selected cartoon; engraving adds the tier rate per cartoon.
   // Credits are dollars, so the dollar total is also the credit cost.
@@ -473,11 +472,7 @@ export function CheckoutPage() {
       <SectionHeading
         kicker="Checkout"
         title="Review your selection."
-        blurb={
-          elevated
-            ? `${count} cartoons selected — elevated to the ${plan}-Cartoon Pack rate.`
-            : `${count} cartoon${count === 1 ? '' : 's'} selected — ${plan}-Cartoon Pack rate.`
-        }
+        blurb={`${count} cartoon${count === 1 ? '' : 's'} selected — review and check out with your credits.`}
       />
 
       <div className="ni-checkout">
@@ -507,7 +502,9 @@ export function CheckoutPage() {
         </div>
 
         <aside className="ni-checkout-summary">
-          <h3>{plan}-Cartoon Pack</h3>
+          <h3>
+            {count} cartoon{count === 1 ? '' : 's'}
+          </h3>
           <p className="ni-checkout-summary__sub">
             ${PER_CARTOON_PRICE} per cartoon · URL +$
             {pricing.engravingPerCartoon}/cartoon
