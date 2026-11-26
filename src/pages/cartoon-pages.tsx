@@ -5,11 +5,11 @@ import {
   ART_BASE,
   CARTOONS,
   COLLAGE_ASSETS,
-  ENGRAVING_PER_CARTOON,
   OFFERS,
   PACK_PRICING,
   PACKS,
   PER_CARTOON_PRICE,
+  RETAIL_PER_CARTOON,
   advanceResolution,
   isMissing,
   planForCount,
@@ -416,9 +416,10 @@ export function CheckoutPage() {
   const plan = planForCount(count);
   const elevated = plan > PACKS[0].size;
 
-  // $1 per selected cartoon; engraving adds $10 per cartoon.
+  // $1 per selected cartoon; engraving is priced per cartoon by tier.
+  const pricing = PACK_PRICING[plan];
   const cartoonsTotal = count * PER_CARTOON_PRICE;
-  const engravingTotal = count * ENGRAVING_PER_CARTOON;
+  const engravingTotal = count * pricing.engravingPerCartoon;
   const total = engraved ? cartoonsTotal + engravingTotal : cartoonsTotal;
 
   return (
@@ -472,7 +473,7 @@ export function CheckoutPage() {
             <h4>Add engraving?</h4>
             <p>
               Put your website address on every cartoon — $
-              {ENGRAVING_PER_CARTOON} per cartoon.
+              {pricing.engravingPerCartoon} per cartoon at this tier.
             </p>
             <div
               className="ni-mode-toggle"
@@ -510,7 +511,7 @@ export function CheckoutPage() {
             {engraved && (
               <div>
                 <dt>
-                  Engraving — {count} × ${ENGRAVING_PER_CARTOON}
+                  Engraving — {count} × ${pricing.engravingPerCartoon}
                 </dt>
                 <dd>${engravingTotal.toLocaleString()}</dd>
               </div>
@@ -702,7 +703,7 @@ function OfferCard({ activeKey }: { activeKey: string }) {
           <p className="ni-price-display">${total.toLocaleString()}</p>
           <p className="ni-price-sub">
             {engraved
-              ? `Includes $${pricing.basePrice} for ${pricing.size} cartoons + $${pricing.engravingFee.toLocaleString()} engraving ($${ENGRAVING_PER_CARTOON}/cartoon)`
+              ? `Includes $${pricing.basePrice} for ${pricing.size} cartoons + $${pricing.engravingFee.toLocaleString()} engraving ($${pricing.engravingPerCartoon}/cartoon)`
               : `$${PER_CARTOON_PRICE} per cartoon · Standard shared catalog without engraving`}
           </p>
 
@@ -818,7 +819,7 @@ export function PricingPage() {
       <SectionHeading
         kicker="Pricing"
         title="Simple pricing."
-        blurb={`Every cartoon is $${PER_CARTOON_PRICE}. Engraving — your website address printed on the artwork — is optional: $${ENGRAVING_PER_CARTOON} per cartoon.`}
+        blurb={`Cartoons are $${PER_CARTOON_PRICE} each in every funnel pack (full price $${RETAIL_PER_CARTOON}). Adding your URL is optional and priced per cartoon by tier — $10 at the 10-pack, $20 at 20, $30 at 30, $50 at 50.`}
       />
       <div className="ni-pricing">
         {OFFERS.filter((o) => o.size != null).map((o) => {
@@ -841,7 +842,9 @@ export function PricingPage() {
                   <dd>${pricing.basePrice.toLocaleString()}</dd>
                 </div>
                 <div>
-                  <dt>Engraving add-on</dt>
+                  <dt>
+                    Engraving add-on (${pricing.engravingPerCartoon}/cartoon)
+                  </dt>
                   <dd>${pricing.engravingFee.toLocaleString()}</dd>
                 </div>
                 <div className="ni-pricing-card__total">
@@ -891,8 +894,9 @@ export function PricingPage() {
       </div>
       <p className="ni-gallery-note">
         Engraving prints your website address on the artwork&rsquo;s plaque —
-        ${ENGRAVING_PER_CARTOON} per cartoon. Without engraving, every cartoon
-        is ${PER_CARTOON_PRICE}.
+        priced per cartoon by tier ($10 / $20 / $30 / $50 at the 10 / 20 / 30 /
+        50 packs). Without engraving, every cartoon is ${PER_CARTOON_PRICE};
+        full retail is ${RETAIL_PER_CARTOON} each.
       </p>
     </section>
   );

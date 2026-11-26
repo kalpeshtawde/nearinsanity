@@ -70,20 +70,26 @@ export function planForCount(count: number): number {
 /**
  * Single source of truth for pricing.
  *
- * Every cartoon costs $1. Engraving (the buyer's website address printed on
- * the artwork) is an optional add-on charged per cartoon: $10 per image.
+ * Cartoons cost $1 each in every funnel pack (full retail is $100 each).
+ * Adding your URL (engraving) is priced per cartoon by tier:
+ *   - 10-pack (nearinsanitypics.com):  $10/cartoon → $100
+ *   - 20-pack (nearinsanitynow.com):   $20/cartoon → $400
+ *   - 30-pack (nearinsanitymagic.com): $30/cartoon → $900
+ *   - 50-pack (nearinsanity4u.com):    $50/cartoon → $2,500
  */
 export const PER_CARTOON_PRICE = 1;
-export const ENGRAVING_PER_CARTOON = 10;
+
+/** Full retail anchor per cartoon, before funnel pricing. */
+export const RETAIL_PER_CARTOON = 100;
 
 export interface PackPricing {
   size: number;
   /** One-time base price for the pack, USD ($1 per cartoon). */
   basePrice: number;
-  /** Engraving add-on for the pack: $10 per cartoon. */
-  engravingFee: number;
-  /** Per-cartoon engraving rate. */
+  /** URL engraving rate per cartoon at this tier ($10 / $20 / $30 / $50). */
   engravingPerCartoon: number;
+  /** engravingPerCartoon × size. */
+  engravingFee: number;
   /** basePrice + engravingFee. */
   totalWithEngraving: number;
   /** Funnel vanity-URL badge shown on the offer card. */
@@ -92,12 +98,13 @@ export interface PackPricing {
 
 function packPricing(size: number, vanityDomain: string): PackPricing {
   const basePrice = size * PER_CARTOON_PRICE;
-  const engravingFee = size * ENGRAVING_PER_CARTOON;
+  const engravingPerCartoon = size; // tier rate: $10, $20, $30, $50 per cartoon
+  const engravingFee = size * engravingPerCartoon;
   return {
     size,
     basePrice,
+    engravingPerCartoon,
     engravingFee,
-    engravingPerCartoon: ENGRAVING_PER_CARTOON,
     totalWithEngraving: basePrice + engravingFee,
     vanityDomain,
   };
@@ -178,7 +185,8 @@ export const OFFERS: Offer[] = [
     label: 'Membership',
     offerName: 'All-Access Membership',
     href: '/membership',
-    blurb: 'Ongoing access to the catalog — $25/month proposed.',
+    blurb:
+      '$25/month — or upgrade to lifetime/unlimited access to the catalog.',
     vanityDomain: 'nearinsanity.com',
     monthlyPrice: MEMBERSHIP_PRICE,
   },
