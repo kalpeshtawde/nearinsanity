@@ -66,6 +66,10 @@ async function api<T>(
 ): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     method: opts.method ?? 'GET',
+    // The storefront uses token auth only. Omitting cookies prevents a
+    // Django admin session in the same browser from triggering DRF's
+    // session-auth CSRF check on POSTs.
+    credentials: 'omit',
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json',

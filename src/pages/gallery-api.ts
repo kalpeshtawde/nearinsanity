@@ -50,6 +50,8 @@ function toCartoon(dto: GalleryImageDto): Cartoon | null {
  */
 export async function fetchGalleryCartoons(): Promise<Cartoon[]> {
   const res = await fetch(`${API_BASE}/api/v1/gallery/`, {
+    // Public endpoint — no cookies needed (avoids session/CSRF interference).
+    credentials: 'omit',
     headers: { Accept: 'application/json' },
   });
   if (!res.ok) throw new Error(`gallery API responded ${res.status}`);
