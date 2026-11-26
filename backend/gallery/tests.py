@@ -151,9 +151,10 @@ class AccountCreditApiTests(TestCase):
         self.auth(token)
         resp = self.client.post(reverse("subscribe"), {"plan_size": 10}, format="json")
         self.assertEqual(resp.status_code, 201)
-        self.assertEqual(resp.data["credits"], 10)
+        # Credits are dollars: the $110 plan grants 110 credits.
+        self.assertEqual(resp.data["credits"], 110)
         me = self.client.get(reverse("me"))
-        self.assertEqual(me.data["credits"], 10)
+        self.assertEqual(me.data["credits"], 110)
 
     def test_subscribe_unknown_plan_rejected(self):
         token = self.register().data["token"]
@@ -161,7 +162,7 @@ class AccountCreditApiTests(TestCase):
         resp = self.client.post(reverse("subscribe"), {"plan_size": 15}, format="json")
         self.assertEqual(resp.status_code, 400)
 
-    def test_checkout_spends_one_credit_per_image(self):
+    def test_checkout_deducts_engraved_cost(self):
         token = self.register().data["token"]
         self.auth(token)
         self.client.post(reverse("subscribe"), {"plan_size": 10}, format="json")
@@ -175,10 +176,63 @@ class AccountCreditApiTests(TestCase):
             format="json",
         )
         self.assertEqual(resp.status_code, 201)
-        self.assertEqual(resp.data["credits"], 7)
+        # 3 images at the 10-pack tier: 3 x ($1 + $10) = $33 = 33 credits.
+        self.assertEqual(resp.data["credits"], 110 - 33)
+        self.assertEqual(resp.data["order"]["credits_used"], 33)
         self.assertEqual(resp.data["order"]["image_count"], 3)
         self.assertEqual(len(resp.data["order"]["items"]), 3)
         self.assertTrue(resp.data["order"]["engraving"])
+
+    def test_checkout_two_engraved_images_costs_22_credits(self):
+        token = self.register().data["token"]
+        self.auth(token)
+        self.client.post(reverse("subscribe"), {"plan_size": 10}, format="json")
+
+        resp = self.client.post(
+            reverse("checkout"),
+            {
+                "image_ids": [str(img.id) for img in self.images[:2]],
+                "engraving": True,
+            },
+            format="json",
+        )
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(resp.data["order"]["credits_used"], 22)
+        self.assertEqual(resp.data["credits"], 88)
+
+    def test_checkout_uses_subscribed_tier_rate(self):
+        token = self.register().data["token"]
+        self.auth(token)
+        # 20-pack: $420 -> 420 credits; URL rate is $20/cartoon.
+        sub = self.client.post(reverse("subscribe"), {"plan_size": 20}, format="json")
+        self.assertEqual(sub.data["credits"], 420)
+
+        resp = self.client.post(
+            reverse("checkout"),
+            {
+                "image_ids": [str(img.id) for img in self.images[:2]],
+                "engraving": True,
+            },
+            format="json",
+        )
+        self.assertEqual(resp.status_code, 201)
+        # 2 x ($1 + $20) = $42 = 42 credits.
+        self.assertEqual(resp.data["order"]["credits_used"], 42)
+        self.assertEqual(resp.data["credits"], 378)
+
+    def test_checkout_plain_images_cost_one_credit_each(self):
+        token = self.register().data["token"]
+        self.auth(token)
+        self.client.post(reverse("subscribe"), {"plan_size": 10}, format="json")
+
+        resp = self.client.post(
+            reverse("checkout"),
+            {"image_ids": [str(img.id) for img in self.images]},
+            format="json",
+        )
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(resp.data["order"]["credits_used"], 3)
+        self.assertEqual(resp.data["credits"], 107)
 
     def test_checkout_insufficient_credits(self):
         token = self.register().data["token"]

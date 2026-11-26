@@ -83,6 +83,10 @@ class CreditAccount(models.Model):
         related_name="credit_account",
     )
     balance = models.PositiveIntegerField(default=0)
+    tier = models.PositiveIntegerField(
+        default=10,
+        help_text="Plan size the credits came from (10/20/30/50); sets the URL rate.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

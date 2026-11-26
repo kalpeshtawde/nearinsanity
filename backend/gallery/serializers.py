@@ -80,6 +80,7 @@ class AdminGalleryImageSerializer(GalleryImageSerializer):
 class UserSerializer(serializers.Serializer):
     email = serializers.EmailField()
     credits = serializers.IntegerField()
+    tier = serializers.IntegerField()
 
 
 class RegisterSerializer(serializers.Serializer):

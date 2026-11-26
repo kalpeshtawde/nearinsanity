@@ -92,6 +92,8 @@ export interface PackPricing {
   engravingFee: number;
   /** basePrice + engravingFee. */
   totalWithEngraving: number;
+  /** Credits granted on subscription — credits are dollars. */
+  credits: number;
   /** Funnel vanity-URL badge shown on the offer card. */
   vanityDomain: string;
 }
@@ -100,12 +102,14 @@ function packPricing(size: number, vanityDomain: string): PackPricing {
   const basePrice = size * PER_CARTOON_PRICE;
   const engravingPerCartoon = size; // tier rate: $10, $20, $30, $50 per cartoon
   const engravingFee = size * engravingPerCartoon;
+  const totalWithEngraving = basePrice + engravingFee;
   return {
     size,
     basePrice,
     engravingPerCartoon,
     engravingFee,
-    totalWithEngraving: basePrice + engravingFee,
+    totalWithEngraving,
+    credits: totalWithEngraving,
     vanityDomain,
   };
 }

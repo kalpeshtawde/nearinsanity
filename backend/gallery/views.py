@@ -56,7 +56,7 @@ from .models import (  # noqa: E402
     OrderItem,
     Subscription,
 )
-from .plans import PLANS, plan_for_count  # noqa: E402
+from .plans import PLANS, checkout_cost  # noqa: E402
 from .serializers import (  # noqa: E402
     CheckoutSerializer,
     LoginSerializer,
@@ -69,7 +69,11 @@ from .serializers import (  # noqa: E402
 
 def _user_payload(user) -> dict:
     account, _ = CreditAccount.objects.get_or_create(user=user)
-    return {"email": user.email or user.username, "credits": account.balance}
+    return {
+        "email": user.email or user.username,
+        "credits": account.balance,
+        "tier": account.tier,
+    }
 
 
 class RegisterView(APIView):
@@ -137,11 +141,12 @@ class SubscribeView(APIView):
             subscription = Subscription.objects.create(
                 user=request.user,
                 plan_size=plan["size"],
-                amount=plan["base_price"],
+                amount=plan["total_with_engraving"],
                 credits_granted=plan["credits"],
             )
             account.balance += plan["credits"]
-            account.save(update_fields=["balance", "updated_at"])
+            account.tier = plan["size"]
+            account.save(update_fields=["balance", "tier", "updated_at"])
             CreditTransaction.objects.create(
                 account=account,
                 delta=plan["credits"],
@@ -183,36 +188,33 @@ class CheckoutView(APIView):
             account, _ = CreditAccount.objects.select_for_update().get_or_create(
                 user=request.user
             )
-            if account.balance < count:
+            cost, _plan_size = checkout_cost(count, engraving, account.tier)
+            if account.balance < cost:
                 return Response(
                     {
-                        "detail": f"Not enough credits: need {count}, have {account.balance}.",
+                        "detail": f"Not enough credits: need {cost}, have {account.balance}.",
                         "credits": account.balance,
-                        "required": count,
+                        "required": cost,
                     },
                     status=400,
                 )
-
-            plan_size = plan_for_count(count)
-            rate = PLANS[plan_size]["engraving_per_cartoon"]
-            amount = (count * rate) if engraving else 0
 
             order = Order.objects.create(
                 user=request.user,
                 image_count=count,
                 engraving=engraving,
-                credits_used=count,
-                amount=amount,
+                credits_used=cost,
+                amount=cost,
             )
             OrderItem.objects.bulk_create(
                 [OrderItem(order=order, image=image) for image in images]
             )
 
-            account.balance -= count
+            account.balance -= cost
             account.save(update_fields=["balance", "updated_at"])
             CreditTransaction.objects.create(
                 account=account,
-                delta=-count,
+                delta=-cost,
                 balance_after=account.balance,
                 reason=CreditTransaction.Reason.CHECKOUT,
             )

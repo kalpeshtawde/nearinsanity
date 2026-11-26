@@ -14,6 +14,8 @@ const TOKEN_KEY = 'ni-auth-token';
 export interface Account {
   email: string;
   credits: number;
+  /** Plan size the credits came from (10/20/30/50) — sets the URL rate. */
+  tier: number;
 }
 
 export interface CheckoutResult {

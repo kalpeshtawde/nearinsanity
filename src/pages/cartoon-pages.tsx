@@ -360,22 +360,10 @@ export function SelectionBar() {
   const count = selected.length;
   if (count === 0) return null;
 
-  const plan = planForCount(count);
-  const prevPlan = planForCount(count - 1);
-  const elevated = prevPlan !== plan;
-  const basePlan = PACKS[0].size;
-
   return (
     <div className="ni-select-bar">
       <span className="ni-select-bar__count">
         {count} selected{count >= max ? ` (max ${max})` : ''}
-      </span>
-      <span className="ni-select-bar__plan">
-        {elevated
-          ? `Elevated to the ${plan}-Pack`
-          : plan === basePlan
-            ? `Base ${plan}-Pack`
-            : `${plan}-Pack`}
       </span>
       <button type="button" className="ni-select-bar__clear" onClick={clear}>
         Clear
@@ -444,16 +432,18 @@ export function CheckoutPage() {
     );
   }
 
-  const plan = planForCount(count);
-  const elevated = plan > PACKS[0].size;
+  // The URL rate follows the plan the credits came from; logged-out users
+  // see a preview at the smallest plan covering the selection.
+  const plan = account?.tier ?? planForCount(count);
 
-  // $1 per selected cartoon; engraving is priced per cartoon by tier.
+  // $1 per selected cartoon; engraving adds the tier rate per cartoon.
+  // Credits are dollars, so the dollar total is also the credit cost.
   const pricing = PACK_PRICING[plan];
   const cartoonsTotal = count * PER_CARTOON_PRICE;
   const engravingTotal = count * pricing.engravingPerCartoon;
   const total = engraved ? cartoonsTotal + engravingTotal : cartoonsTotal;
   const credits = account?.credits ?? 0;
-  const enough = account !== null && credits >= count;
+  const enough = account !== null && credits >= total;
 
   const complete = async () => {
     setError(null);
@@ -478,9 +468,9 @@ export function CheckoutPage() {
         kicker="Checkout"
         title="Review your selection."
         blurb={
-          elevated
-            ? `${count} cartoons selected — that's above the ${PACKS[0].size}-Pack, so you've been elevated to the ${plan}-Cartoon Pack.`
-            : `${count} cartoon${count === 1 ? '' : 's'} selected — that matches the ${plan}-Cartoon Pack.`
+          account
+            ? `${count} cartoon${count === 1 ? '' : 's'} selected — you're on the ${plan}-Cartoon Pack.`
+            : `${count} cartoon${count === 1 ? '' : 's'} selected — sign in to check out with credits.`
         }
       />
 
@@ -513,10 +503,8 @@ export function CheckoutPage() {
         <aside className="ni-checkout-summary">
           <h3>{plan}-Cartoon Pack</h3>
           <p className="ni-checkout-summary__sub">
-            ${PER_CARTOON_PRICE} per cartoon ·{' '}
-            {elevated
-              ? 'auto-elevated from your selection'
-              : 'matches your selection'}
+            ${PER_CARTOON_PRICE} per cartoon · URL +$
+            {pricing.engravingPerCartoon}/cartoon
           </p>
 
           {account ? (
@@ -525,7 +513,7 @@ export function CheckoutPage() {
                 Credits: <strong>{credits}</strong>
               </span>
               <span>
-                This order: <strong>{count}</strong>
+                This order: <strong>{total}</strong> credits
               </span>
             </div>
           ) : (
@@ -603,13 +591,13 @@ export function CheckoutPage() {
             >
               {busy
                 ? 'Checking out…'
-                : `Complete checkout — uses ${count} credit${count === 1 ? '' : 's'}`}
+                : `Complete checkout — uses ${total.toLocaleString()} credits`}
             </button>
           ) : (
             <>
               <p className="ni-auth-error">
-                You need {count - credits} more credit
-                {count - credits === 1 ? '' : 's'} for this selection.
+                You need {(total - credits).toLocaleString()} more credit
+                {total - credits === 1 ? '' : 's'} for this selection.
               </p>
               <a
                 className="ni-btn ni-btn--primary ni-checkout-summary__cta"
@@ -922,7 +910,8 @@ export function PricingPage() {
                 +${pricing.engravingFee.toLocaleString()} to add your URL
                 <br />
                 <strong>
-                  ${pricing.totalWithEngraving.toLocaleString()} with your URL
+                  ${pricing.totalWithEngraving.toLocaleString()} with your URL —{' '}
+                  {pricing.credits.toLocaleString()} credits
                 </strong>
               </p>
 
@@ -1051,8 +1040,10 @@ export function SigninPage() {
           <div className="ni-auth-card">
             <h3>Subscribe to the {plan}-Cartoon Pack</h3>
             <p>
-              Add {plan} credits to your account for $
-              {PACK_PRICING[plan].basePrice.toLocaleString()} (payment simulated).
+              Add {PACK_PRICING[plan].credits.toLocaleString()} credits to your
+              account for $
+              {PACK_PRICING[plan].totalWithEngraving.toLocaleString()} (payment
+              simulated).
             </p>
             {error && <p className="ni-auth-error">{error}</p>}
             <button
@@ -1061,7 +1052,9 @@ export function SigninPage() {
               onClick={subscribeNow}
               disabled={busy}
             >
-              {busy ? 'Adding credits…' : `Subscribe — +${plan} credits`}
+              {busy
+                ? 'Adding credits…'
+                : `Subscribe — +${PACK_PRICING[plan].credits.toLocaleString()} credits`}
             </button>
           </div>
         ) : (
@@ -1085,7 +1078,7 @@ export function SigninPage() {
         title={plan ? `Get the ${plan}-Cartoon Pack.` : 'Sign in.'}
         blurb={
           plan
-            ? `Create an account or sign in to receive ${plan} image credits for $${PACK_PRICING[plan].basePrice.toLocaleString()} (payment simulated).`
+            ? `Create an account or sign in to receive ${PACK_PRICING[plan].credits.toLocaleString()} credits for $${PACK_PRICING[plan].totalWithEngraving.toLocaleString()} (payment simulated).`
             : 'Sign in to use your credits and check out cartoons.'
         }
       />
@@ -1138,7 +1131,7 @@ export function SigninPage() {
               ? 'Working…'
               : mode === 'register'
                 ? plan
-                  ? `Create account & subscribe — $${PACK_PRICING[plan].basePrice.toLocaleString()}`
+                  ? `Create account & subscribe — $${PACK_PRICING[plan].totalWithEngraving.toLocaleString()}`
                   : 'Create account'
                 : plan
                   ? 'Sign in & subscribe'
