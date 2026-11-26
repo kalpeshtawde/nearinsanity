@@ -27,3 +27,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+# Agent/tool skill files (not project code)
+.agents/
