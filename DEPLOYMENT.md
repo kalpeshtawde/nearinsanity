@@ -76,9 +76,10 @@ Then:
      `checkout.session.async_payment_succeeded`
 3. Copy the endpoint's signing secret (`whsec_...`) into
    `STRIPE_WEBHOOK_SECRET`.
-4. Restart the backend and confirm:
+4. Recreate the backend so it picks up the new `backend/.env` (a plain
+   `restart` does **not** re-read `env_file`), then confirm:
    ```bash
-   docker-compose -f docker-compose.prod.yml restart backend
+   docker-compose -f docker-compose.prod.yml up -d backend
    curl -s https://nearinsanity.com/api/v1/config/   # {"stripe_enabled":true}
    ```
 
