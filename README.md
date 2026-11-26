@@ -151,9 +151,19 @@ unpublished images are hidden from the public API. Each image gets a UUID.
 | --- | --- | --- | --- |
 | `/api/v1/gallery/` | GET | public | List published gallery images (paginated) |
 | `/api/v1/gallery/<uuid>/` | GET | public | One published image |
+| `/api/v1/auth/register/` | POST | public | Create an account (email + password), returns a token |
+| `/api/v1/auth/login/` | POST | public | Log in, returns a token |
+| `/api/v1/auth/logout/` | POST | token | Revoke the token |
+| `/api/v1/me/` | GET | token | Account email + credit balance |
+| `/api/v1/subscribe/` | POST | token | Buy a funnel plan; grants credits equal to the plan size |
+| `/api/v1/checkout/` | POST | token | Spend one credit per selected image; records the order |
 | `/api/v1/admin/gallery/` | GET/POST | staff | List / upload images |
 | `/api/v1/admin/gallery/<uuid>/` | GET/PUT/PATCH/DELETE | staff | Update / delete one image |
 | `/api/v1/schema/` | GET | public | OpenAPI schema (JSON) |
+
+Accounts use token auth (`Authorization: Token <key>`). Subscriptions and
+checkouts are recorded server-side; payment is simulated until a real
+processor is added.
 
 Upload example:
 

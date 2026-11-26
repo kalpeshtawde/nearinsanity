@@ -66,7 +66,8 @@ class GalleryApiTests(TestCase):
             reverse("admin-gallery-list"), {"title": "nope"}, format="multipart"
         )
 
-        self.assertEqual(resp.status_code, 403)
+        # Token auth makes unauthenticated requests 401; session/basic use 403.
+        self.assertIn(resp.status_code, (401, 403))
 
     def test_staff_can_upload_and_defaults_to_published(self):
         resp = self.staff_client.post(
@@ -90,3 +91,124 @@ class GalleryApiTests(TestCase):
         delete = self.staff_client.delete(detail_url)
         self.assertEqual(delete.status_code, 204)
         self.assertFalse(GalleryImage.objects.filter(pk=img.pk).exists())
+
+class AccountCreditApiTests(TestCase):
+    """Register/login, subscribe for credits, and credit-based checkout."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.images = [
+            GalleryImage.objects.create(title=f"Cartoon {i}", image=make_image_file())
+            for i in range(3)
+        ]
+
+    def register(self, email="user@example.com", password="password123"):
+        return self.client.post(
+            reverse("auth-register"),
+            {"email": email, "password": password},
+            format="json",
+        )
+
+    def auth(self, token):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token}")
+
+    def test_register_returns_token_and_zero_credits(self):
+        resp = self.register()
+        self.assertEqual(resp.status_code, 201)
+        self.assertTrue(resp.data["token"])
+        self.assertEqual(resp.data["user"]["credits"], 0)
+
+    def test_duplicate_email_rejected(self):
+        self.register()
+        resp = self.register()
+        self.assertEqual(resp.status_code, 400)
+
+    def test_login_returns_token_and_credits(self):
+        self.register()
+        resp = self.client.post(
+            reverse("auth-login"),
+            {"email": "user@example.com", "password": "password123"},
+            format="json",
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data["user"]["credits"], 0)
+
+    def test_login_wrong_password_rejected(self):
+        self.register()
+        resp = self.client.post(
+            reverse("auth-login"),
+            {"email": "user@example.com", "password": "wrong-password"},
+            format="json",
+        )
+        self.assertEqual(resp.status_code, 400)
+
+    def test_me_requires_auth(self):
+        resp = self.client.get(reverse("me"))
+        self.assertIn(resp.status_code, (401, 403))
+
+    def test_subscribe_grants_plan_credits(self):
+        token = self.register().data["token"]
+        self.auth(token)
+        resp = self.client.post(reverse("subscribe"), {"plan_size": 10}, format="json")
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(resp.data["credits"], 10)
+        me = self.client.get(reverse("me"))
+        self.assertEqual(me.data["credits"], 10)
+
+    def test_subscribe_unknown_plan_rejected(self):
+        token = self.register().data["token"]
+        self.auth(token)
+        resp = self.client.post(reverse("subscribe"), {"plan_size": 15}, format="json")
+        self.assertEqual(resp.status_code, 400)
+
+    def test_checkout_spends_one_credit_per_image(self):
+        token = self.register().data["token"]
+        self.auth(token)
+        self.client.post(reverse("subscribe"), {"plan_size": 10}, format="json")
+
+        resp = self.client.post(
+            reverse("checkout"),
+            {
+                "image_ids": [str(img.id) for img in self.images],
+                "engraving": True,
+            },
+            format="json",
+        )
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(resp.data["credits"], 7)
+        self.assertEqual(resp.data["order"]["image_count"], 3)
+        self.assertEqual(len(resp.data["order"]["items"]), 3)
+        self.assertTrue(resp.data["order"]["engraving"])
+
+    def test_checkout_insufficient_credits(self):
+        token = self.register().data["token"]
+        self.auth(token)
+
+        resp = self.client.post(
+            reverse("checkout"),
+            {"image_ids": [str(img.id) for img in self.images]},
+            format="json",
+        )
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.data["required"], 3)
+        self.assertEqual(resp.data["credits"], 0)
+
+    def test_checkout_requires_auth(self):
+        resp = self.client.post(
+            reverse("checkout"),
+            {"image_ids": [str(img.id) for img in self.images]},
+            format="json",
+        )
+        self.assertIn(resp.status_code, (401, 403))
+
+    def test_checkout_rejects_unknown_image(self):
+        token = self.register().data["token"]
+        self.auth(token)
+        self.client.post(reverse("subscribe"), {"plan_size": 10}, format="json")
+
+        resp = self.client.post(
+            reverse("checkout"),
+            {"image_ids": ["00000000-0000-0000-0000-000000000000"]},
+            format="json",
+        )
+        self.assertEqual(resp.status_code, 400)

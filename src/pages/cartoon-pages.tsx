@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { fetchGalleryCartoons } from './gallery-api';
+import { useAuth } from './auth';
 import { useSelection } from './selection';
 import {
   ART_BASE,
@@ -387,16 +388,47 @@ export function SelectionBar() {
   );
 }
 
-/** Checkout: review the selection, see the matched pack and pricing. */
+/** Checkout: review the selection, spend credits, see the matched pack. */
 export function CheckoutPage() {
   const { selected, remove, clear } = useSelection();
+  const { account, checkout } = useAuth();
   const [engraved, setEngraved] = useState(true);
   const [resolved, setResolved] = useState<Record<string, Resolution>>({});
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<{ orderId: string; credits: number } | null>(
+    null,
+  );
   const count = selected.length;
 
   const handleImgError = (cartoon: Cartoon) => {
     setResolved((prev) => advanceResolution(prev, cartoon.id));
   };
+
+  if (result) {
+    return (
+      <section className="ni-section ni-section--band ni-page-head">
+        <SectionHeading
+          kicker="Checkout"
+          title="Order complete."
+          blurb={`${count} cartoon${count === 1 ? '' : 's'} checked out${
+            engraved ? ' with engraving' : ''
+          }. ${result.credits} credit${result.credits === 1 ? '' : 's'} remaining.`}
+        />
+        <p className="ni-checkout-order">
+          Order <code>{result.orderId}</code>
+        </p>
+        <div className="ni-auth-actions">
+          <a className="ni-btn ni-btn--primary" href="/gallery">
+            Back to the gallery <span aria-hidden="true">→</span>
+          </a>
+          <a className="ni-btn" href="/pricing">
+            Buy more credits
+          </a>
+        </div>
+      </section>
+    );
+  }
 
   if (count === 0) {
     return (
@@ -421,6 +453,25 @@ export function CheckoutPage() {
   const cartoonsTotal = count * PER_CARTOON_PRICE;
   const engravingTotal = count * pricing.engravingPerCartoon;
   const total = engraved ? cartoonsTotal + engravingTotal : cartoonsTotal;
+  const credits = account?.credits ?? 0;
+  const enough = account !== null && credits >= count;
+
+  const complete = async () => {
+    setError(null);
+    setBusy(true);
+    try {
+      const res = await checkout(
+        selected.map((c) => c.id),
+        engraved,
+      );
+      setResult(res);
+      clear();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Checkout failed.');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <section className="ni-section ni-section--band ni-page-head">
@@ -468,6 +519,21 @@ export function CheckoutPage() {
               ? 'auto-elevated from your selection'
               : 'matches your selection'}
           </p>
+
+          {account ? (
+            <div className="ni-credits-row">
+              <span>
+                Credits: <strong>{credits}</strong>
+              </span>
+              <span>
+                This order: <strong>{count}</strong>
+              </span>
+            </div>
+          ) : (
+            <div className="ni-credits-row ni-credits-row--anon">
+              <span>Sign in to check out with credits.</span>
+            </div>
+          )}
 
           <div className="ni-checkout-engrave">
             <h4>Add engraving?</h4>
@@ -522,17 +588,40 @@ export function CheckoutPage() {
             </div>
           </dl>
 
-          <button
-            type="button"
-            className="ni-btn ni-btn--primary ni-checkout-summary__cta"
-            onClick={() =>
-              window.alert(
-                'Payment is coming soon — this storefront demo does not process orders yet.',
-              )
-            }
-          >
-            Complete checkout — ${total.toLocaleString()}
-          </button>
+          {error && <p className="ni-auth-error">{error}</p>}
+
+          {!account ? (
+            <a
+              className="ni-btn ni-btn--primary ni-checkout-summary__cta"
+              href="/signin?next=/checkout"
+            >
+              Sign in to check out <span aria-hidden="true">→</span>
+            </a>
+          ) : enough ? (
+            <button
+              type="button"
+              className="ni-btn ni-btn--primary ni-checkout-summary__cta"
+              onClick={complete}
+              disabled={busy}
+            >
+              {busy
+                ? 'Checking out…'
+                : `Complete checkout — uses ${count} credit${count === 1 ? '' : 's'}`}
+            </button>
+          ) : (
+            <>
+              <p className="ni-auth-error">
+                You need {count - credits} more credit
+                {count - credits === 1 ? '' : 's'} for this selection.
+              </p>
+              <a
+                className="ni-btn ni-btn--primary ni-checkout-summary__cta"
+                href="/pricing"
+              >
+                Buy credits <span aria-hidden="true">→</span>
+              </a>
+            </>
+          )}
           <a className="ni-checkout-summary__link" href="/gallery">
             ← Continue shopping
           </a>
@@ -854,9 +943,10 @@ export function PricingPage() {
               </dl>
               <a
                 className="ni-btn ni-btn--primary ni-pricing-card__cta"
-                href={o.href}
+                href={`/signin?plan=${o.size}`}
               >
-                View pack <span aria-hidden="true">→</span>
+                Subscribe — +{o.size} credits{' '}
+                <span aria-hidden="true">→</span>
               </a>
             </article>
           );
@@ -898,6 +988,192 @@ export function PricingPage() {
         50 packs). Without engraving, every cartoon is ${PER_CARTOON_PRICE};
         full retail is ${RETAIL_PER_CARTOON} each.
       </p>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Sign in / subscribe                                                 */
+/* ------------------------------------------------------------------ */
+
+export function SigninPage() {
+  const { account, login, register, subscribe } = useAuth();
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [subscribedCredits, setSubscribedCredits] = useState<number | null>(null);
+
+  const params = new URLSearchParams(window.location.search);
+  const planParam = Number(params.get('plan') ?? '');
+  const plan = PACKS.some((p) => p.size === planParam) ? planParam : null;
+  const next = params.get('next') || '/checkout';
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setBusy(true);
+    try {
+      if (mode === 'register') {
+        await register(email, password);
+      } else {
+        await login(email, password);
+      }
+      if (plan) {
+        setSubscribedCredits(await subscribe(plan));
+      } else {
+        window.location.assign(next);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const subscribeNow = async () => {
+    if (!plan) return;
+    setError(null);
+    setBusy(true);
+    try {
+      setSubscribedCredits(await subscribe(plan));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Signed in and just bought a plan.
+  if (subscribedCredits !== null) {
+    return (
+      <section className="ni-section ni-section--band ni-page-head">
+        <SectionHeading
+          kicker="Subscription"
+          title="You're all set."
+          blurb={`Your ${plan}-cartoon plan is active. You now have ${subscribedCredits} credits on ${account?.email}.`}
+        />
+        <div className="ni-auth-actions">
+          <a className="ni-btn ni-btn--primary" href={next}>
+            Continue to checkout <span aria-hidden="true">→</span>
+          </a>
+          <a className="ni-btn" href="/gallery">
+            Browse the gallery
+          </a>
+        </div>
+      </section>
+    );
+  }
+
+  // Already signed in (e.g. arrived from a plan CTA).
+  if (account) {
+    return (
+      <section className="ni-section ni-section--band ni-page-head">
+        <SectionHeading
+          kicker="Account"
+          title="You're signed in."
+          blurb={`${account.email} — ${account.credits} credit${account.credits === 1 ? '' : 's'} available.`}
+        />
+        {plan ? (
+          <div className="ni-auth-card">
+            <h3>Subscribe to the {plan}-Cartoon Pack</h3>
+            <p>
+              Add {plan} credits to your account for $
+              {PACK_PRICING[plan].basePrice.toLocaleString()} (payment simulated).
+            </p>
+            {error && <p className="ni-auth-error">{error}</p>}
+            <button
+              type="button"
+              className="ni-btn ni-btn--primary"
+              onClick={subscribeNow}
+              disabled={busy}
+            >
+              {busy ? 'Adding credits…' : `Subscribe — +${plan} credits`}
+            </button>
+          </div>
+        ) : (
+          <div className="ni-auth-actions">
+            <a className="ni-btn ni-btn--primary" href="/checkout">
+              Go to checkout <span aria-hidden="true">→</span>
+            </a>
+            <a className="ni-btn" href="/pricing">
+              View plans
+            </a>
+          </div>
+        )}
+      </section>
+    );
+  }
+
+  return (
+    <section className="ni-section ni-section--band ni-page-head">
+      <SectionHeading
+        kicker={plan ? 'Subscribe' : 'Account'}
+        title={plan ? `Get the ${plan}-Cartoon Pack.` : 'Sign in.'}
+        blurb={
+          plan
+            ? `Create an account or sign in to receive ${plan} image credits for $${PACK_PRICING[plan].basePrice.toLocaleString()} (payment simulated).`
+            : 'Sign in to use your credits and check out cartoons.'
+        }
+      />
+      <div className="ni-auth-card">
+        <div className="ni-mode-toggle" role="radiogroup" aria-label="Account mode">
+          <button
+            type="button"
+            role="radio"
+            aria-checked={mode === 'login'}
+            className={mode === 'login' ? 'is-selected' : ''}
+            onClick={() => setMode('login')}
+          >
+            Sign in
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={mode === 'register'}
+            className={mode === 'register' ? 'is-selected' : ''}
+            onClick={() => setMode('register')}
+          >
+            Create account
+          </button>
+        </div>
+        <form className="ni-auth-form" onSubmit={submit}>
+          <label>
+            Email
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              required
+            />
+          </label>
+          <label>
+            Password
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
+              minLength={8}
+              required
+            />
+          </label>
+          {error && <p className="ni-auth-error">{error}</p>}
+          <button type="submit" className="ni-btn ni-btn--primary" disabled={busy}>
+            {busy
+              ? 'Working…'
+              : mode === 'register'
+                ? plan
+                  ? `Create account & subscribe — $${PACK_PRICING[plan].basePrice.toLocaleString()}`
+                  : 'Create account'
+                : plan
+                  ? 'Sign in & subscribe'
+                  : 'Sign in'}
+          </button>
+        </form>
+      </div>
     </section>
   );
 }

@@ -38,3 +38,186 @@ class AdminGalleryViewSet(viewsets.ModelViewSet):
     queryset = GalleryImage.objects.all()
     lookup_field = "pk"
     lookup_url_kwarg = "pk"
+
+# ---------------------------------------------------------------------------
+# Accounts, credits, subscriptions, orders
+# ---------------------------------------------------------------------------
+
+from django.db import transaction  # noqa: E402
+from rest_framework.authtoken.models import Token  # noqa: E402
+from rest_framework.permissions import AllowAny, IsAuthenticated  # noqa: E402
+from rest_framework.response import Response  # noqa: E402
+from rest_framework.views import APIView  # noqa: E402
+
+from .models import (  # noqa: E402
+    CreditAccount,
+    CreditTransaction,
+    Order,
+    OrderItem,
+    Subscription,
+)
+from .plans import PLANS, plan_for_count  # noqa: E402
+from .serializers import (  # noqa: E402
+    CheckoutSerializer,
+    LoginSerializer,
+    OrderSerializer,
+    RegisterSerializer,
+    SubscribeSerializer,
+    SubscriptionSerializer,
+)
+
+
+def _user_payload(user) -> dict:
+    account, _ = CreditAccount.objects.get_or_create(user=user)
+    return {"email": user.email or user.username, "credits": account.balance}
+
+
+class RegisterView(APIView):
+    """Create an email/password account and return an auth token."""
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = RegisterSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        token = Token.objects.create(user=user)
+        return Response(
+            {"token": token.key, "user": _user_payload(user)}, status=201
+        )
+
+
+class LoginView(APIView):
+    """Email + password login returning an auth token."""
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = LoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data["user"]
+        token, _ = Token.objects.get_or_create(user=user)
+        return Response({"token": token.key, "user": _user_payload(user)})
+
+
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        Token.objects.filter(user=request.user).delete()
+        return Response(status=204)
+
+
+class MeView(APIView):
+    """Current account: email + credit balance."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response(_user_payload(request.user))
+
+
+class SubscribeView(APIView):
+    """Purchase a funnel plan: grants credits equal to the plan size.
+
+    Payment is simulated for now (no card processing).
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = SubscribeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        plan = PLANS[serializer.validated_data["plan_size"]]
+
+        with transaction.atomic():
+            account, _ = CreditAccount.objects.select_for_update().get_or_create(
+                user=request.user
+            )
+            subscription = Subscription.objects.create(
+                user=request.user,
+                plan_size=plan["size"],
+                amount=plan["base_price"],
+                credits_granted=plan["credits"],
+            )
+            account.balance += plan["credits"]
+            account.save(update_fields=["balance", "updated_at"])
+            CreditTransaction.objects.create(
+                account=account,
+                delta=plan["credits"],
+                balance_after=account.balance,
+                reason=CreditTransaction.Reason.SUBSCRIPTION,
+            )
+
+        return Response(
+            {
+                "subscription": SubscriptionSerializer(subscription).data,
+                "credits": account.balance,
+            },
+            status=201,
+        )
+
+
+class CheckoutView(APIView):
+    """Spend credits on the selected cartoons (one credit per image)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = CheckoutSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        image_ids = serializer.validated_data["image_ids"]
+        engraving = serializer.validated_data["engraving"]
+
+        images = list(
+            GalleryImage.objects.filter(id__in=image_ids, is_published=True)
+        )
+        if len(images) != len(image_ids):
+            return Response(
+                {"detail": "One or more selected images were not found."},
+                status=400,
+            )
+
+        count = len(images)
+        with transaction.atomic():
+            account, _ = CreditAccount.objects.select_for_update().get_or_create(
+                user=request.user
+            )
+            if account.balance < count:
+                return Response(
+                    {
+                        "detail": f"Not enough credits: need {count}, have {account.balance}.",
+                        "credits": account.balance,
+                        "required": count,
+                    },
+                    status=400,
+                )
+
+            plan_size = plan_for_count(count)
+            rate = PLANS[plan_size]["engraving_per_cartoon"]
+            amount = (count * rate) if engraving else 0
+
+            order = Order.objects.create(
+                user=request.user,
+                image_count=count,
+                engraving=engraving,
+                credits_used=count,
+                amount=amount,
+            )
+            OrderItem.objects.bulk_create(
+                [OrderItem(order=order, image=image) for image in images]
+            )
+
+            account.balance -= count
+            account.save(update_fields=["balance", "updated_at"])
+            CreditTransaction.objects.create(
+                account=account,
+                delta=-count,
+                balance_after=account.balance,
+                reason=CreditTransaction.Reason.CHECKOUT,
+            )
+
+        return Response(
+            {"order": OrderSerializer(order).data, "credits": account.balance},
+            status=201,
+        )

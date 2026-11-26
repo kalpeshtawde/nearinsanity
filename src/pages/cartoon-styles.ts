@@ -1522,6 +1522,115 @@ export const NI_CSS = `
   }
 }
 
+/* ---------------- Account + credits ---------------- */
+
+.ni-credits-chip {
+  display: inline-block;
+  background: var(--ni-yellow);
+  color: var(--ni-ink);
+  font-weight: 800;
+  font-size: 0.85rem;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 2px solid var(--ni-ink);
+}
+
+.ni-credits-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  background: rgba(245, 179, 1, 0.12);
+  border: 1.5px solid rgba(245, 179, 1, 0.5);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  margin-bottom: 14px;
+}
+
+.ni-credits-row--anon {
+  justify-content: center;
+  color: var(--ni-ink-soft);
+  font-weight: 600;
+}
+
+.ni-auth-card {
+  max-width: 460px;
+  background: var(--ni-paper-light);
+  border: 2px solid var(--ni-ink);
+  border-radius: 6px;
+  box-shadow: var(--ni-shadow);
+  padding: 24px;
+}
+
+.ni-auth-card h3 {
+  font-family: var(--ni-font-display);
+  font-weight: 900;
+  font-size: 1.3rem;
+  margin: 0 0 6px;
+}
+
+.ni-auth-card p {
+  margin: 0 0 14px;
+  color: var(--ni-ink-soft);
+  font-size: 0.92rem;
+}
+
+.ni-auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.ni-auth-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.ni-auth-form input {
+  font: inherit;
+  padding: 10px 12px;
+  border: 2px solid var(--ni-ink);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ni-ink);
+}
+
+.ni-auth-form input:focus-visible {
+  outline: 3px solid var(--ni-yellow);
+  outline-offset: 1px;
+}
+
+.ni-auth-error {
+  margin: 0;
+  color: var(--ni-red);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.ni-auth-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.ni-checkout-order {
+  font-size: 0.95rem;
+  color: var(--ni-ink-soft);
+  margin: 0 0 18px;
+}
+
+.ni-checkout-order code {
+  font-size: 0.9rem;
+  background: var(--ni-paper-deep);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
 /* ---------------- Reduced motion ---------------- */
 
 @media (prefers-reduced-motion: reduce) {

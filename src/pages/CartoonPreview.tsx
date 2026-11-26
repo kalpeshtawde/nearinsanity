@@ -1,6 +1,15 @@
 import { useEffect } from 'react';
 import { NI_CSS } from './cartoon-styles';
-import { CheckoutPage, GalleryPage, HomePage, OfferPage, PricingPage, SelectionBar } from './cartoon-pages';
+import {
+  CheckoutPage,
+  GalleryPage,
+  HomePage,
+  OfferPage,
+  PricingPage,
+  SelectionBar,
+  SigninPage,
+} from './cartoon-pages';
+import { AuthProvider, useAuth } from './auth';
 import { SelectionProvider } from './selection';
 
 /**
@@ -129,6 +138,7 @@ function scrollToSection(id: string) {
 
 /** Shared sticky header: logo home link + page-flow nav + live-preview CTA. */
 function Header({ route }: { route: string }) {
+  const { account, logout } = useAuth();
   // Section links live on the homepage; from any other page, navigate home
   // first (with a ?scroll= target) and then glide to the section.
   const goToSection = (id: string) => {
@@ -164,6 +174,23 @@ function Header({ route }: { route: string }) {
           >
             Gallery
           </a>
+          {account ? (
+            <>
+              <span className="ni-credits-chip" title={account.email}>
+                {account.credits} credit{account.credits === 1 ? '' : 's'}
+              </span>
+              <button type="button" onClick={() => void logout()}>
+                Sign out
+              </button>
+            </>
+          ) : (
+            <a
+              href="/signin"
+              aria-current={route === 'signin' ? 'page' : undefined}
+            >
+              Sign in
+            </a>
+          )}
           <button
             type="button"
             className="ni-nav-cta"
@@ -197,6 +224,7 @@ function renderPage(route: string) {
   if (route === 'gallery') return <GalleryPage />;
   if (route === 'checkout') return <CheckoutPage />;
   if (route === 'pricing') return <PricingPage />;
+  if (route === 'signin') return <SigninPage />;
   if (
     route === 'membership' ||
     route.startsWith('packs/')
@@ -243,14 +271,16 @@ export function CartoonPreview({ route }: { route: string }) {
   }, []);
 
   return (
-    <SelectionProvider>
-      <div className="ni-root">
-        <style>{NI_CSS}</style>
-        <Header route={route} />
-        <main>{renderPage(route)}</main>
-        <SelectionBar />
-        <Footer />
-      </div>
-    </SelectionProvider>
+    <AuthProvider>
+      <SelectionProvider>
+        <div className="ni-root">
+          <style>{NI_CSS}</style>
+          <Header route={route} />
+          <main>{renderPage(route)}</main>
+          <SelectionBar />
+          <Footer />
+        </div>
+      </SelectionProvider>
+    </AuthProvider>
   );
 }

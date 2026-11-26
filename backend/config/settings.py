@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     # Third-party
     "corsheaders",
     "rest_framework",
+    "rest_framework.authtoken",
     # Local
     "gallery",
 ]
@@ -177,6 +178,8 @@ CORS_ALLOWED_ORIGINS = [
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
+        # Token auth for the storefront SPA (Authorization: Token <key>).
+        "rest_framework.authentication.TokenAuthentication",
         "rest_framework.authentication.SessionAuthentication",
         # Convenient for API scripts/tools (curl -u ...). Safe in production
         # only when served over HTTPS.
