@@ -211,9 +211,21 @@ function Footer() {
         <span className="ni-footer__brand">
           Near <em>Insanity</em>
         </span>
-        <span className="ni-footer__meta">
-          © 2026 Bob Johnson · Near Insanity Digital Cartoons
-        </span>
+        <div className="ni-footer__right">
+          <span className="ni-footer__meta">
+            © 2026 Bob Johnson · Near Insanity Digital Cartoons
+          </span>
+          <span className="ni-footer__credit">
+            Developed &amp; maintained by{' '}
+            <a
+              href="https://ishasystems.com"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              ISHA Systems
+            </a>
+          </span>
+        </div>
       </div>
     </footer>
   );

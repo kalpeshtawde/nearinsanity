@@ -1230,6 +1230,34 @@ export const NI_CSS = `
   color: var(--ni-ink-soft);
 }
 
+.ni-footer__right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.ni-footer__credit {
+  font-size: 0.82rem;
+  color: var(--ni-ink-soft);
+}
+
+.ni-footer__credit a {
+  color: var(--ni-red);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.ni-footer__credit a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+  .ni-footer__right {
+    align-items: flex-start;
+  }
+}
+
 /* ---------------- Selection + checkout ---------------- */
 
 .ni-card-wrap {
