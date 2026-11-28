@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 66 66" role="img" aria-label="Near Insanity">
+  <rect width="66" height="66" rx="12" fill="#F6EFDF" />
+  <g
+    transform="translate(1 0)"
+    fill="none"
+    stroke="#26201A"
+    stroke-width="3.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <!-- left wing -->
+    <path d="M12 34 C 3 30, 0 20, 6 10 C 10 14, 12 23, 14 30 Z" fill="#F6EFDF" />
+    <!-- right wing -->
+    <path d="M54 30 C 60 27, 63 20, 60 13 C 57 17, 55 23, 54 27 Z" fill="#F6EFDF" />
+    <!-- burnt-orange toast popping from the slot -->
+    <rect
+      x="27"
+      y="6"
+      width="15"
+      height="16"
+      rx="3"
+      transform="rotate(5 34.5 14)"
+      fill="#E4572E"
+    />
+    <!-- top face -->
+    <path d="M14 32 L 26 22 H 58 L 48 32 Z" fill="#F6EFDF" />
+    <!-- toast slot on the top face -->
+    <path d="M23 29 L 53 23" />
+    <!-- front face -->
+    <path d="M14 32 H 48 V 56 Q 48 62 42 62 H 20 Q 14 62 14 56 Z" fill="#F6EFDF" />
+    <!-- right face -->
+    <path d="M48 32 L 58 22 V 52 L 48 62 Z" fill="#F6EFDF" />
+    <!-- side lever + knob -->
+    <path d="M55 30 V 46" stroke-width="3" />
+    <circle cx="55" cy="38" r="2.6" fill="#26201A" stroke="none" />
+    <!-- feet -->
+    <path d="M20 62 v 3 M42 62 v 3" stroke-width="3" />
+  </g>
+</svg>
